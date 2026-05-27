@@ -160,6 +160,7 @@ result = supabase.table("underlyings").select("*").execute()
 df = pd.DataFrame(result.data)
 
 st.dataframe(df, use_container_width=True)
+
 # ===================================================
 # TRADE ERFASSUNG
 # ===================================================
@@ -273,6 +274,7 @@ if not trade_df.empty:
 
 else:
     st.info("Noch keine Trades vorhanden.")
+
 # ===================================================
 # OFFENE POSITIONEN
 # ===================================================
@@ -355,6 +357,7 @@ if not trade_df.empty:
 
 else:
     st.info("Noch keine Trades vorhanden.")
+
 # ===================================================
 # KURSDATEN UPDATE
 # ===================================================
@@ -411,8 +414,11 @@ if st.button("Kursdaten aktualisieren"):
 
                             inserted_rows += 1
 
-                       except Exception as e:
-    st.warning(f"Speicherfehler bei {ticker}: {e}")
+                        except Exception as e:
+
+                            st.warning(
+                                f"Speicherfehler bei {ticker}: {e}"
+                            )
 
                 progress_bar.progress(
                     (idx + 1) / len(tickers)
