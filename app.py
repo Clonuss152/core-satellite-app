@@ -409,7 +409,17 @@ from snapshot_loader import (
     load_latest_momentum_snapshot,
     load_latest_order_snapshot
 )
+st.header("Daily Update")
 
+if st.button("Daily Update ausführen"):
+
+    with st.spinner("Daily Update läuft..."):
+
+        run_daily_update()
+
+    st.success(
+        "Daily Update erfolgreich abgeschlossen."
+    )
 st.header("Snapshot Dashboard")
 
 # ===================================================
