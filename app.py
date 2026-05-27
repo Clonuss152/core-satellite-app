@@ -249,7 +249,7 @@ with tab_trades:
                 "gross_amount": float(quantity * price),
                 "fees": 0.0,
                 "taxes": 0.0,
-                "cash_flow": float(cash_flow),
+                "net_cash_effect": float(cash_flow),
                 "actual_leverage": float(actual_leverage),
                 "ko_level": float(ko_level),
                 "notes": notes
