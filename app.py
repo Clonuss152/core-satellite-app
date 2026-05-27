@@ -250,8 +250,6 @@ with tab_trades:
                 "fees": 0.0,
                 "taxes": 0.0,
                 "net_cash_effect": float(cash_flow),
-                "actual_leverage": float(actual_leverage),
-                "ko_level": float(ko_level),
                 "notes": notes
             }).execute()
 
