@@ -11,14 +11,17 @@ st.set_page_config(
 
 st.title("Core + Satellite Trading System")
 
-# ---------------------------------------------------
-# Supabase Verbindung
-# ---------------------------------------------------
+# ===================================================
+# SUPABASE VERBINDUNG
+# ===================================================
 
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
 
 st.success("Supabase Verbindung erfolgreich.")
 
@@ -75,16 +78,29 @@ with st.form("cash_form"):
 
     if submit_cash:
 
-        supabase.table("cash_transactions").insert({
-            "transaction_date": str(transaction_date),
+        supabase.table(
+            "cash_transactions"
+        ).insert({
+
+            "transaction_date": str(
+                transaction_date
+            ),
+
             "transaction_type": transaction_type,
+
             "system_type": system_type,
+
             "amount": amount,
+
             "broker_cash_after": broker_cash_after,
+
             "description": description
+
         }).execute()
 
-        st.success("Cash Buchung gespeichert.")
+        st.success(
+            "Cash Buchung gespeichert."
+        )
 
 # ===================================================
 # CASH ÜBERSICHT
@@ -96,7 +112,9 @@ cash_result = supabase.table(
     "cash_transactions"
 ).select("*").execute()
 
-cash_df = pd.DataFrame(cash_result.data)
+cash_df = pd.DataFrame(
+    cash_result.data
+)
 
 if not cash_df.empty:
 
@@ -105,7 +123,9 @@ if not cash_df.empty:
         use_container_width=True
     )
 
-    total_cash = cash_df["amount"].sum()
+    total_cash = cash_df[
+        "amount"
+    ].sum()
 
     st.metric(
         "Gesamte Cash Bewegungen",
@@ -113,53 +133,101 @@ if not cash_df.empty:
     )
 
 else:
-    st.info("Noch keine Cash Buchungen vorhanden.")
+
+    st.info(
+        "Noch keine Cash Buchungen vorhanden."
+    )
 
 # ===================================================
 # UNDERLYINGS
 # ===================================================
 
-st.header("Neues Underlying hinzufügen")
+st.header(
+    "Neues Underlying hinzufügen"
+)
 
-with st.form("add_underlying_form"):
+with st.form(
+    "add_underlying_form"
+):
 
-    ticker = st.text_input("Ticker")
-    company_name = st.text_input("Unternehmensname")
+    ticker = st.text_input(
+        "Ticker"
+    )
 
-    isin = st.text_input("ISIN")
-    wkn = st.text_input("WKN")
+    company_name = st.text_input(
+        "Unternehmensname"
+    )
+
+    isin = st.text_input(
+        "ISIN"
+    )
+
+    wkn = st.text_input(
+        "WKN"
+    )
 
     strategy_role = st.selectbox(
         "Strategie",
-        ["CORE", "SATELLITE"]
+        [
+            "CORE",
+            "SATELLITE"
+        ]
     )
 
-    exchange = st.text_input("Börse")
-    currency = st.text_input("Währung")
+    exchange = st.text_input(
+        "Börse"
+    )
 
-    submit = st.form_submit_button("Speichern")
+    currency = st.text_input(
+        "Währung"
+    )
+
+    submit = st.form_submit_button(
+        "Speichern"
+    )
 
     if submit:
 
-        supabase.table("underlyings").insert({
+        supabase.table(
+            "underlyings"
+        ).insert({
+
             "ticker": ticker,
+
             "company_name": company_name,
+
             "isin": isin,
+
             "wkn": wkn,
+
             "strategy_role": strategy_role,
+
             "exchange": exchange,
+
             "currency": currency
+
         }).execute()
 
-        st.success("Underlying gespeichert.")
+        st.success(
+            "Underlying gespeichert."
+        )
 
-st.header("Gespeicherte Underlyings")
+st.header(
+    "Gespeicherte Underlyings"
+)
 
-result = supabase.table("underlyings").select("*").execute()
+result = supabase.table(
+    "underlyings"
+).select("*").execute()
 
-df = pd.DataFrame(result.data)
+df = pd.DataFrame(
+    result.data
+)
 
-st.dataframe(df, use_container_width=True)
+st.dataframe(
+    df,
+    use_container_width=True
+)
 
 # ===================================================
 # TRADE ERFASSUNG
@@ -170,20 +238,31 @@ st.header("Trade Erfassung")
 underlying_options = []
 
 if not df.empty:
-    underlying_options = df["ticker"].tolist()
+
+    underlying_options = df[
+        "ticker"
+    ].tolist()
 
 with st.form("trade_form"):
 
-    trade_date = st.date_input("Trade Datum")
+    trade_date = st.date_input(
+        "Trade Datum"
+    )
 
     action = st.selectbox(
         "Aktion",
-        ["BUY", "SELL"]
+        [
+            "BUY",
+            "SELL"
+        ]
     )
 
     system_type = st.selectbox(
         "System",
-        ["CORE", "SATELLITE"]
+        [
+            "CORE",
+            "SATELLITE"
+        ]
     )
 
     underlying_ticker = st.selectbox(
@@ -191,10 +270,17 @@ with st.form("trade_form"):
         underlying_options
     )
 
-    turbo_wkn = st.text_input("Turbo WKN")
-    turbo_isin = st.text_input("Turbo ISIN")
+    turbo_wkn = st.text_input(
+        "Turbo WKN"
+    )
 
-    issuer = st.text_input("Emittent")
+    turbo_isin = st.text_input(
+        "Turbo ISIN"
+    )
+
+    issuer = st.text_input(
+        "Emittent"
+    )
 
     quantity = st.number_input(
         "Stückzahl",
@@ -221,7 +307,9 @@ with st.form("trade_form"):
         step=0.01
     )
 
-    notes = st.text_input("Notizen")
+    notes = st.text_input(
+        "Notizen"
+    )
 
     submit_trade = st.form_submit_button(
         "Trade speichern"
@@ -229,29 +317,56 @@ with st.form("trade_form"):
 
     if submit_trade:
 
-        theoretical_value = quantity * price
-
-        implicit_costs = abs(
-            cash_flow - theoretical_value
+        theoretical_value = (
+            quantity * price
         )
 
-        supabase.table("trades").insert({
-            "trade_date": str(trade_date),
+        implicit_costs = abs(
+            cash_flow
+            - theoretical_value
+        )
+
+        supabase.table(
+            "trades"
+        ).insert({
+
+            "trade_date": str(
+                trade_date
+            ),
+
             "system_type": system_type,
+
             "action": action,
+
             "underlying_ticker": underlying_ticker,
+
             "turbo_wkn": turbo_wkn,
+
             "turbo_isin": turbo_isin,
+
             "issuer": issuer,
+
             "quantity": quantity,
+
             "price": price,
+
             "gross_amount": theoretical_value,
+
             "net_cash_effect": cash_flow,
+
             "fees": implicit_costs,
+
+            "actual_leverage": actual_leverage,
+
+            "ko_level": ko_level,
+
             "notes": notes
+
         }).execute()
 
-        st.success("Trade gespeichert.")
+        st.success(
+            "Trade gespeichert."
+        )
 
 # ===================================================
 # TRADE HISTORIE
@@ -263,7 +378,9 @@ trade_result = supabase.table(
     "trades"
 ).select("*").execute()
 
-trade_df = pd.DataFrame(trade_result.data)
+trade_df = pd.DataFrame(
+    trade_result.data
+)
 
 if not trade_df.empty:
 
@@ -273,7 +390,10 @@ if not trade_df.empty:
     )
 
 else:
-    st.info("Noch keine Trades vorhanden.")
+
+    st.info(
+        "Noch keine Trades vorhanden."
+    )
 
 # ===================================================
 # OFFENE POSITIONEN
@@ -284,45 +404,60 @@ st.header("Offene Positionen")
 if not trade_df.empty:
 
     grouped = trade_df.groupby(
+
         [
             "system_type",
             "underlying_ticker",
             "turbo_wkn"
         ],
+
         dropna=False
+
     ).apply(
 
         lambda x: pd.Series({
 
-            "BUY_QTY": x.loc[
-                x["action"] == "BUY",
-                "quantity"
-            ].sum(),
+            "BUY_QTY":
 
-            "SELL_QTY": x.loc[
-                x["action"] == "SELL",
-                "quantity"
-            ].sum(),
+                x.loc[
+                    x["action"] == "BUY",
+                    "quantity"
+                ].sum(),
 
-            "LAST_PRICE": x.iloc[-1]["price"],
+            "SELL_QTY":
 
-            "LAST_LEVERAGE": x.iloc[-1].get(
-                "actual_leverage",
-                None
-            ),
+                x.loc[
+                    x["action"] == "SELL",
+                    "quantity"
+                ].sum(),
 
-            "LAST_KO": x.iloc[-1].get(
-                "ko_level",
-                None
-            )
+            "LAST_PRICE":
+
+                x.iloc[-1]["price"],
+
+            "LAST_LEVERAGE":
+
+                x.iloc[-1].get(
+                    "actual_leverage",
+                    None
+                ),
+
+            "LAST_KO":
+
+                x.iloc[-1].get(
+                    "ko_level",
+                    None
+                )
 
         })
 
     ).reset_index()
 
     grouped["OPEN_QTY"] = (
+
         grouped["BUY_QTY"]
         - grouped["SELL_QTY"]
+
     )
 
     open_positions = grouped[
@@ -334,8 +469,10 @@ if not trade_df.empty:
         open_positions[
             "ESTIMATED_POSITION_VALUE"
         ] = (
+
             open_positions["OPEN_QTY"]
             * open_positions["LAST_PRICE"]
+
         )
 
         st.dataframe(
@@ -353,10 +490,16 @@ if not trade_df.empty:
         )
 
     else:
-        st.info("Keine offenen Positionen.")
+
+        st.info(
+            "Keine offenen Positionen."
+        )
 
 else:
-    st.info("Noch keine Trades vorhanden.")
+
+    st.info(
+        "Noch keine Trades vorhanden."
+    )
 
 # ===================================================
 # KURSDATEN UPDATE
@@ -364,19 +507,29 @@ else:
 
 st.header("Kursdaten Update")
 
-if st.button("Kursdaten aktualisieren"):
+if st.button(
+    "Kursdaten aktualisieren"
+):
 
     if not df.empty:
 
-        tickers = df["ticker"].unique()
+        tickers = df[
+            "ticker"
+        ].unique()
 
         inserted_rows = 0
 
         progress_bar = st.progress(0)
 
-        for idx, ticker in enumerate(tickers):
+        for idx, ticker in enumerate(
+            tickers
+        ):
 
             try:
+
+                st.write(
+                    f"Lade Daten für {ticker}..."
+                )
 
                 data = yf.download(
                     ticker,
@@ -387,24 +540,51 @@ if st.button("Kursdaten aktualisieren"):
 
                 if not data.empty:
 
-                    data.reset_index(inplace=True)
+                    data.reset_index(
+                        inplace=True
+                    )
+
+                    date_column = data.columns[0]
 
                     for _, row in data.iterrows():
 
-                        record = {
-                            "ticker": ticker,
-                            "price_date": str(
-                                row["Date"].date()
-                            ),
-                            "open": float(row["Open"]),
-                            "high": float(row["High"]),
-                            "low": float(row["Low"]),
-                            "close": float(row["Close"]),
-                            "adj_close": float(row["Adj Close"]),
-                            "volume": float(row["Volume"])
-                        }
-
                         try:
+
+                            record = {
+
+                                "ticker": ticker,
+
+                                "price_date": str(
+                                    pd.to_datetime(
+                                        row[date_column]
+                                    ).date()
+                                ),
+
+                                "open": float(
+                                    row["Open"]
+                                ),
+
+                                "high": float(
+                                    row["High"]
+                                ),
+
+                                "low": float(
+                                    row["Low"]
+                                ),
+
+                                "close": float(
+                                    row["Close"]
+                                ),
+
+                                "adj_close": float(
+                                    row["Adj Close"]
+                                ),
+
+                                "volume": float(
+                                    row["Volume"]
+                                )
+
+                            }
 
                             supabase.table(
                                 "price_history"
@@ -420,8 +600,15 @@ if st.button("Kursdaten aktualisieren"):
                                 f"Speicherfehler bei {ticker}: {e}"
                             )
 
+                else:
+
+                    st.warning(
+                        f"Keine Daten für {ticker} gefunden."
+                    )
+
                 progress_bar.progress(
-                    (idx + 1) / len(tickers)
+                    (idx + 1)
+                    / len(tickers)
                 )
 
             except Exception as e:
