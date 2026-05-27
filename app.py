@@ -19,6 +19,11 @@ from momentum import calculate_momentum
 from regime import get_regime
 from orders import generate_core_orders, generate_sat_orders
 from utils import add_business_days
+from snapshot import (
+    save_regime_snapshot,
+    save_momentum_snapshot,
+    save_order_snapshot
+)
 
 
 st.set_page_config(page_title="Core Satellite System", layout="wide")
@@ -542,7 +547,29 @@ else:
         ],
         use_container_width=True
     )
+if st.button("Snapshot speichern"):
 
+    save_regime_snapshot(
+        supabase,
+        regime,
+        top10_mom
+    )
+
+    save_momentum_snapshot(
+        supabase,
+        "CORE",
+        core_target,
+        core_leverage,
+        core_sell_buffer
+    )
+
+    save_momentum_snapshot(
+        supabase,
+        "SATELLITE",
+        sat_target,
+        [10.0],
+        3
+    )
     st.header("Order Engine")
 
     core_orders = generate_core_orders(
@@ -560,7 +587,17 @@ else:
         open_positions=open_positions,
         df=df
     )
+    save_order_snapshot(
+        supabase,
+        core_orders
+    )
 
+    save_order_snapshot(
+        supabase,
+        sat_orders
+    )
+
+    st.success("Snapshots gespeichert.")
     if not core_rebalance_due:
         core_orders["status"] = "VORSCHAU - kein CORE Rebalance heute"
 
