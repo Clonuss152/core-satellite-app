@@ -67,16 +67,33 @@ tab_dashboard, tab_portfolio, tab_trades, tab_data, tab_admin = st.tabs(
 )
 
 with tab_dashboard:
+
     st.header("Snapshot Dashboard")
+
     st.subheader("System Status")
 
     last_update = "Noch kein Update"
 
     if not status_df.empty:
-        row = status_df[status_df["status_key"] == "last_daily_update"]
+
+        row = status_df[
+            status_df["status_key"]
+            == "last_daily_update"
+        ]
 
         if not row.empty and row.iloc[0]["status_value"]:
-            last_update = row.iloc[0]["status_value"]
+
+            timestamp_raw = row.iloc[0][
+                "status_value"
+            ]
+
+            timestamp_dt = pd.to_datetime(
+                timestamp_raw
+            )
+
+            last_update = timestamp_dt.strftime(
+                "%d.%m.%Y %H:%M Uhr"
+            )
 
     col_a, col_b, col_c = st.columns(3)
 
