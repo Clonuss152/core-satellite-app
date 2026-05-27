@@ -243,10 +243,13 @@ if st.button("Kursdaten aktualisieren"):
                     }
 
                     try:
-                        supabase.table("price_history").upsert(record).execute()
+                        supabase.table("price_history").upsert(
+                            record,
+                            on_conflict="ticker,price_date"
+                            ).execute()
                         inserted_rows += 1
-                    except Exception as e:
-                        st.warning(f"Speicherfehler bei {ticker}: {e}")
+                    except Exception:
+                        pass
 
                 progress_bar.progress((idx + 1) / len(tickers))
 
