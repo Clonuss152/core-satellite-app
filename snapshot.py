@@ -81,50 +81,37 @@ def save_momentum_snapshot(
         ).insert(rows).execute()
 
 
-def save_order_snapshot(
-    supabase,
-    orders_df
-):
+def save_order_snapshot(supabase, orders_df):
 
     if orders_df.empty:
         return
 
     snapshot_date = str(date.today())
-
     rows = []
 
     for _, row in orders_df.iterrows():
 
-        target_leverage = row.get(
-            "target_leverage",
-            None
-        )
-
-        rank = row.get(
-            "rank",
-            None
-        )
+        target_leverage = row.get("target_leverage", None)
+        rank = row.get("rank", None)
 
         if pd.isna(target_leverage):
             target_leverage = None
+        else:
+            target_leverage = float(target_leverage)
 
         if pd.isna(rank):
             rank = None
+        else:
+            rank = int(rank)
 
         rows.append({
-
             "snapshot_date": snapshot_date,
-
-            "system_type": row.get("system"),
-            "action": row.get("action"),
-            "ticker": row.get("ticker"),
-            "reason": row.get("reason"),
-
+            "system_type": str(row.get("system")),
+            "action": str(row.get("action")),
+            "ticker": str(row.get("ticker")),
+            "reason": str(row.get("reason")),
             "target_leverage": target_leverage,
             "rank": rank
-
         })
 
-    supabase.table(
-        "order_snapshot"
-    ).insert(rows).execute()
+    supabase.table("order_snapshot").insert(rows).execute()
