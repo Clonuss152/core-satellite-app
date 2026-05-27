@@ -1,10 +1,15 @@
+import time
 import yfinance as yf
 
 
 def enrich_underlying_metadata(supabase, ticker):
 
     try:
-        info = yf.Ticker(ticker).info
+        time.sleep(1.0)
+
+        stock = yf.Ticker(ticker)
+
+        info = stock.get_info()
 
         company_name = (
             info.get("longName")
