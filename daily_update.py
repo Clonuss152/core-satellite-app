@@ -561,7 +561,25 @@ def run_daily_update():
         supabase,
         sat_orders
     )
+    # ===================================================
+    # SYSTEM STATUS
+    # ===================================================
 
+    from datetime import datetime
+
+    supabase.table(
+        "system_status"
+    ).upsert(
+        {
+            "status_key": "last_daily_update",
+            "status_value": str(datetime.now())
+        },
+        on_conflict="status_key"
+    ).execute()
+
+    print(
+        "System Status aktualisiert."
+    )
     print(
         "Snapshots gespeichert."
     )
