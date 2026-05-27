@@ -464,6 +464,7 @@ with tab_admin:
             run_daily_update()
 
         st.success("Daily Update erfolgreich abgeschlossen.")
+        st.rerun()
 
     st.subheader("Rebalance Status")
 
