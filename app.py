@@ -104,7 +104,6 @@ if st.button("CORE/SATELLITE Universum importieren"):
                     "ticker": ticker,
                     "company_name": ticker,
                     "strategy_role": role,
-                    "is_active": True
                 },
                 on_conflict="ticker"
             ).execute()
@@ -141,7 +140,6 @@ with st.form("add_underlying_form"):
                 "strategy_role": strategy_role,
                 "exchange": exchange,
                 "currency": currency,
-                "is_active": True
             },
             on_conflict="ticker"
         ).execute()
