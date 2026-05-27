@@ -339,7 +339,7 @@ if st.button("Kursdaten aktualisieren"):
 
 st.header("Momentum Ranking")
 
-price_result = supabase.table("price_history").select("*").execute()
+price_result = supabase.table("price_history").select("*").limit(250000).execute()
 price_df = pd.DataFrame(price_result.data)
 
 if price_df.empty:
