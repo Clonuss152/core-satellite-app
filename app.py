@@ -159,3 +159,116 @@ result = supabase.table("underlyings").select("*").execute()
 df = pd.DataFrame(result.data)
 
 st.dataframe(df, use_container_width=True)
+# ===================================================
+# TRADE ERFASSUNG
+# ===================================================
+
+st.header("Trade Erfassung")
+
+underlying_options = []
+
+if not df.empty:
+    underlying_options = df["ticker"].tolist()
+
+with st.form("trade_form"):
+
+    trade_date = st.date_input("Trade Datum")
+
+    action = st.selectbox(
+        "Aktion",
+        ["BUY", "SELL"]
+    )
+
+    system_type = st.selectbox(
+        "System",
+        ["CORE", "SATELLITE"]
+    )
+
+    underlying_ticker = st.selectbox(
+        "Underlying",
+        underlying_options
+    )
+
+    turbo_wkn = st.text_input("Turbo WKN")
+    turbo_isin = st.text_input("Turbo ISIN")
+
+    issuer = st.text_input("Emittent")
+
+    quantity = st.number_input(
+        "Stückzahl",
+        step=1.0
+    )
+
+    price = st.number_input(
+        "Kurs",
+        step=0.01
+    )
+
+    cash_flow = st.number_input(
+        "Tatsächlicher Cash Flow laut Broker",
+        step=0.01
+    )
+
+    actual_leverage = st.number_input(
+        "Tatsächlicher Hebel",
+        step=0.1
+    )
+
+    ko_level = st.number_input(
+        "KO Level",
+        step=0.01
+    )
+
+    notes = st.text_input("Notizen")
+
+    submit_trade = st.form_submit_button(
+        "Trade speichern"
+    )
+
+    if submit_trade:
+
+        theoretical_value = quantity * price
+
+        implicit_costs = abs(
+            cash_flow - theoretical_value
+        )
+
+        supabase.table("trades").insert({
+            "trade_date": str(trade_date),
+            "system_type": system_type,
+            "action": action,
+            "underlying_ticker": underlying_ticker,
+            "turbo_wkn": turbo_wkn,
+            "turbo_isin": turbo_isin,
+            "issuer": issuer,
+            "quantity": quantity,
+            "price": price,
+            "gross_amount": theoretical_value,
+            "net_cash_effect": cash_flow,
+            "fees": implicit_costs,
+            "notes": notes
+        }).execute()
+
+        st.success("Trade gespeichert.")
+
+# ===================================================
+# TRADE HISTORIE
+# ===================================================
+
+st.header("Trade Historie")
+
+trade_result = supabase.table(
+    "trades"
+).select("*").execute()
+
+trade_df = pd.DataFrame(trade_result.data)
+
+if not trade_df.empty:
+
+    st.dataframe(
+        trade_df,
+        use_container_width=True
+    )
+
+else:
+    st.info("Noch keine Trades vorhanden.")
