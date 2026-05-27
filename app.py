@@ -31,7 +31,7 @@ SAT_TICKERS = """
 """.split()
 
 # ===================================================
-# UNDERLYINGS LADEN
+# DATEN LADEN
 # ===================================================
 
 result = supabase.table("underlyings").select("*").execute()
@@ -103,7 +103,7 @@ if st.button("CORE/SATELLITE Universum importieren"):
                 {
                     "ticker": ticker,
                     "company_name": ticker,
-                    "strategy_role": role,
+                    "strategy_role": role
                 },
                 on_conflict="ticker"
             ).execute()
@@ -139,7 +139,7 @@ with st.form("add_underlying_form"):
                 "wkn": wkn,
                 "strategy_role": strategy_role,
                 "exchange": exchange,
-                "currency": currency,
+                "currency": currency
             },
             on_conflict="ticker"
         ).execute()
@@ -250,7 +250,7 @@ else:
     st.info("Noch keine Trades vorhanden.")
 
 # ===================================================
-# KURSDATEN UPDATE
+# KURSDATEN UPDATE - BATCH VERSION
 # ===================================================
 
 st.header("Kursdaten Update")
@@ -258,8 +258,10 @@ st.header("Kursdaten Update")
 if st.button("Kursdaten aktualisieren"):
     if not df.empty:
         tickers = df["ticker"].dropna().unique()
-        inserted_rows = 0
-        processed_rows = 0
+
+        total_rows = 0
+        failed_tickers = []
+
         progress_bar = st.progress(0)
 
         for idx, ticker in enumerate(tickers):
@@ -277,7 +279,7 @@ if st.button("Kursdaten aktualisieren"):
                 )
 
                 if data.empty:
-                    st.warning(f"Keine Daten für {ticker} gefunden.")
+                    failed_tickers.append(ticker)
                     progress_bar.progress((idx + 1) / len(tickers))
                     continue
 
@@ -288,15 +290,16 @@ if st.button("Kursdaten aktualisieren"):
                 date_column = data.columns[0]
 
                 required_columns = ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
-                missing_columns = [col for col in required_columns if col not in data.columns]
 
-                if missing_columns:
-                    st.warning(f"Fehlende Spalten bei {ticker}: {missing_columns}")
+                if not all(col in data.columns for col in required_columns):
+                    failed_tickers.append(ticker)
                     progress_bar.progress((idx + 1) / len(tickers))
                     continue
 
+                records = []
+
                 for _, row in data.iterrows():
-                    record = {
+                    records.append({
                         "ticker": ticker,
                         "price_date": str(pd.to_datetime(row[date_column]).date()),
                         "open": float(row["Open"]),
@@ -305,24 +308,28 @@ if st.button("Kursdaten aktualisieren"):
                         "close": float(row["Close"]),
                         "adj_close": float(row["Adj Close"]),
                         "volume": float(row["Volume"])
-                    }
+                    })
 
-                    try:
-                        supabase.table("price_history").upsert(
-                            record,
-                            on_conflict="ticker,price_date"
-                        ).execute()
-                        inserted_rows += 1
-                        processed_rows += 1
-                    except Exception:
-                        pass
+                if records:
+                    supabase.table("price_history").upsert(
+                        records,
+                        on_conflict="ticker,price_date"
+                    ).execute()
+
+                    total_rows += len(records)
 
                 progress_bar.progress((idx + 1) / len(tickers))
 
             except Exception as e:
+                failed_tickers.append(ticker)
                 st.warning(f"Fehler bei {ticker}: {e}")
 
-        st.success(f"{processed_rows} Kursdaten verarbeitet.")
+        st.success(f"{total_rows} Kursdaten verarbeitet.")
+
+        if failed_tickers:
+            st.warning("Folgende Ticker konnten nicht geladen werden:")
+            st.write(failed_tickers)
+
     else:
         st.warning("Keine Underlyings vorhanden.")
 
