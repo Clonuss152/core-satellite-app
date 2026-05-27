@@ -342,6 +342,12 @@ st.header("Momentum Ranking")
 price_result = supabase.table("price_history").select("*").limit(250000).execute()
 price_df = pd.DataFrame(price_result.data)
 
+st.write("Geladene Kursdaten-Zeilen:", len(price_df))
+
+if not price_df.empty:
+    st.write("Anzahl Ticker in price_history:", price_df["ticker"].nunique())
+    st.write("Ticker mit Kursdaten:", sorted(price_df["ticker"].unique())[:50])
+
 if price_df.empty:
     st.info("Noch keine Kursdaten vorhanden.")
 else:
