@@ -1,4 +1,5 @@
 from datetime import date
+import pandas as pd
 def clear_today_snapshots(supabase):
 
     snapshot_date = str(date.today())
@@ -94,6 +95,22 @@ def save_order_snapshot(
 
     for _, row in orders_df.iterrows():
 
+        target_leverage = row.get(
+            "target_leverage",
+            None
+        )
+
+        rank = row.get(
+            "rank",
+            None
+        )
+
+        if pd.isna(target_leverage):
+            target_leverage = None
+
+        if pd.isna(rank):
+            rank = None
+
         rows.append({
 
             "snapshot_date": snapshot_date,
@@ -103,15 +120,8 @@ def save_order_snapshot(
             "ticker": row.get("ticker"),
             "reason": row.get("reason"),
 
-            "target_leverage": row.get(
-                "target_leverage",
-                None
-            ),
-
-            "rank": row.get(
-                "rank",
-                None
-            )
+            "target_leverage": target_leverage,
+            "rank": rank
 
         })
 
