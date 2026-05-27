@@ -8,11 +8,27 @@ st.set_page_config(page_title="Core Satellite System", layout="wide")
 
 st.title("Core + Satellite Trading System")
 
+# ===================================================
+# SUPABASE VERBINDUNG
+# ===================================================
+
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.success("Supabase Verbindung erfolgreich.")
+
+# ===================================================
+# STRATEGIE UNIVERSUM
+# ===================================================
+
+CORE_TICKERS = """
+AAPL MSFT NVDA AMZN META GOOGL TSLA AVGO COST AMD NFLX ADBE PEP CSCO INTC QCOM TXN AMGN INTU BKNG ISRG AMAT MU LRCX PANW KLAC MELI CDNS SNPS ADP BRK-B JPM V MA UNH XOM LLY PG JNJ HD CVX ABBV MRK KO BAC WMT ORCL CRM LIN MCD ACN CAT IBM GE RTX ADS.DE ALV.DE BAS.DE BAYN.DE BMW.DE DB1.DE DBK.DE DTE.DE EOAN.DE IFX.DE MBG.DE MUV2.DE RHM.DE SAP.DE SIE.DE VOW3.DE AIR.DE BEI.DE BNR.DE EVK.DE FRE.DE HEN3.DE LEG.DE MTX.DE P911.DE RWE.DE SY1.DE ZAL.DE AIXA.DE AT1.DE BC8.DE EVT.DE NEM.DE QIA.DE SRT3.DE ASML.AS MC.PA OR.PA SAN.MC SU.PA TTE.PA AI.PA DG.PA BN.PA ENI.MI ISP.MI ABI.BR
+""".split()
+
+SAT_TICKERS = """
+1COV.DE ABT ADYEN.AS AFRM AFX.DE AMD APP ARM ASML.AS AVGO BABA BE BKNG BYDDF CCJ CELH CHWY COIN CRWD CVNA DASH DDOG DTG.DE DUOL ENPH ETSY EVGO FSLY FTNT GCT GLOB HOOD HWM IOT JOBY KLAC LSPD MDB MELI META MRVL NET NEXI.MI NICE NIO NOKIA.HE NOW NTRA NVDA OKTA ONON PANW PATH PAYC PDD PLTR QCOM RBLX RIVN RKLB ROKU SHOP SMCI SNOW SOFI SQ STMPA.PA TEAM TEM TOST TSLA TTD TWLO U UBER UPST UTDI.DE VEEV VRT VST VZ WAF.DE WCH.DE XPEV ZS UCG.MI UCB.BR NDA.DE SZG.DE NDX1.DE SAP.DE DB1.DE ALV.DE IFX.DE RHM.DE MBG.DE BMW.DE P911.DE AIR.DE RWE.DE SY1.DE BEI.DE BNR.DE ZAL.DE LEG.DE FRE.DE HEN3.DE AIXA.DE QIA.DE EVT.DE SRT3.DE BC8.DE
+""".split()
 
 # ===================================================
 # UNDERLYINGS LADEN
@@ -29,7 +45,10 @@ st.header("Cash Management")
 
 with st.form("cash_form"):
     transaction_date = st.date_input("Datum", value=date.today())
-    transaction_type = st.selectbox("Typ", ["EINZAHLUNG", "AUSZAHLUNG", "STEUER", "GEBUEHR", "KORREKTUR"])
+    transaction_type = st.selectbox(
+        "Typ",
+        ["EINZAHLUNG", "AUSZAHLUNG", "STEUER", "GEBUEHR", "KORREKTUR"]
+    )
     system_type = st.selectbox("System", ["GESAMT", "CORE", "SATELLITE"])
     amount = st.number_input("Betrag", step=0.01)
     broker_cash_after = st.number_input("Broker Cash nach Buchung", step=0.01)
@@ -59,7 +78,45 @@ else:
     st.info("Noch keine Cash Buchungen vorhanden.")
 
 # ===================================================
-# UNDERLYINGS
+# UNIVERSUM IMPORT
+# ===================================================
+
+st.header("Universum initialisieren")
+
+if st.button("CORE/SATELLITE Universum importieren"):
+    all_tickers = sorted(set(CORE_TICKERS + SAT_TICKERS))
+    imported = 0
+
+    for ticker in all_tickers:
+        in_core = ticker in CORE_TICKERS
+        in_sat = ticker in SAT_TICKERS
+
+        if in_core and in_sat:
+            role = "BOTH"
+        elif in_core:
+            role = "CORE"
+        else:
+            role = "SATELLITE"
+
+        try:
+            supabase.table("underlyings").upsert(
+                {
+                    "ticker": ticker,
+                    "company_name": ticker,
+                    "strategy_role": role,
+                    "is_active": True
+                },
+                on_conflict="ticker"
+            ).execute()
+            imported += 1
+        except Exception as e:
+            st.warning(f"Importfehler bei {ticker}: {e}")
+
+    st.success(f"{imported} Underlyings importiert/aktualisiert.")
+    st.info("Bitte Seite neu laden, damit die Tabelle aktualisiert wird.")
+
+# ===================================================
+# UNDERLYINGS MANUELL
 # ===================================================
 
 st.header("Neues Underlying hinzufügen")
@@ -69,22 +126,26 @@ with st.form("add_underlying_form"):
     company_name = st.text_input("Unternehmensname")
     isin = st.text_input("ISIN")
     wkn = st.text_input("WKN")
-    strategy_role = st.selectbox("Strategie", ["CORE", "SATELLITE"])
+    strategy_role = st.selectbox("Strategie", ["CORE", "SATELLITE", "BOTH"])
     exchange = st.text_input("Börse")
     currency = st.text_input("Währung")
     submit = st.form_submit_button("Speichern")
 
     if submit:
-        supabase.table("underlyings").insert({
-            "ticker": ticker,
-            "company_name": company_name,
-            "isin": isin,
-            "wkn": wkn,
-            "strategy_role": strategy_role,
-            "exchange": exchange,
-            "currency": currency
-        }).execute()
-        st.success("Underlying gespeichert.")
+        supabase.table("underlyings").upsert(
+            {
+                "ticker": ticker,
+                "company_name": company_name,
+                "isin": isin,
+                "wkn": wkn,
+                "strategy_role": strategy_role,
+                "exchange": exchange,
+                "currency": currency,
+                "is_active": True
+            },
+            on_conflict="ticker"
+        ).execute()
+        st.success("Underlying gespeichert/aktualisiert.")
 
 st.header("Gespeicherte Underlyings")
 st.dataframe(df, use_container_width=True)
@@ -177,9 +238,14 @@ if not trade_df.empty:
     open_positions = grouped[grouped["OPEN_QTY"] > 0]
 
     if not open_positions.empty:
-        open_positions["ESTIMATED_POSITION_VALUE"] = open_positions["OPEN_QTY"] * open_positions["LAST_PRICE"]
+        open_positions["ESTIMATED_POSITION_VALUE"] = (
+            open_positions["OPEN_QTY"] * open_positions["LAST_PRICE"]
+        )
         st.dataframe(open_positions, use_container_width=True)
-        st.metric("Geschätztes investiertes Kapital", f"{open_positions['ESTIMATED_POSITION_VALUE'].sum():,.2f} €")
+        st.metric(
+            "Geschätztes investiertes Kapital",
+            f"{open_positions['ESTIMATED_POSITION_VALUE'].sum():,.2f} €"
+        )
     else:
         st.info("Keine offenen Positionen.")
 else:
@@ -195,6 +261,7 @@ if st.button("Kursdaten aktualisieren"):
     if not df.empty:
         tickers = df["ticker"].dropna().unique()
         inserted_rows = 0
+        processed_rows = 0
         progress_bar = st.progress(0)
 
         for idx, ticker in enumerate(tickers):
@@ -246,8 +313,9 @@ if st.button("Kursdaten aktualisieren"):
                         supabase.table("price_history").upsert(
                             record,
                             on_conflict="ticker,price_date"
-                            ).execute()
+                        ).execute()
                         inserted_rows += 1
+                        processed_rows += 1
                     except Exception:
                         pass
 
@@ -256,7 +324,7 @@ if st.button("Kursdaten aktualisieren"):
             except Exception as e:
                 st.warning(f"Fehler bei {ticker}: {e}")
 
-        st.success(f"{inserted_rows} Kursdaten gespeichert.")
+        st.success(f"{processed_rows} Kursdaten verarbeitet.")
     else:
         st.warning("Keine Underlyings vorhanden.")
 
@@ -286,7 +354,6 @@ else:
                 continue
 
             latest_price = group.iloc[-1]["adj_close"]
-
             score = 0
             momentum_values = {}
 
@@ -316,8 +383,15 @@ else:
     sat_tickers = []
 
     if not df.empty:
-        core_tickers = df.loc[df["strategy_role"] == "CORE", "ticker"].tolist()
-        sat_tickers = df.loc[df["strategy_role"] == "SATELLITE", "ticker"].tolist()
+        core_tickers = df.loc[
+            df["strategy_role"].isin(["CORE", "BOTH"]),
+            "ticker"
+        ].tolist()
+
+        sat_tickers = df.loc[
+            df["strategy_role"].isin(["SATELLITE", "BOTH"]),
+            "ticker"
+        ].tolist()
 
     core_prices = price_df[price_df["ticker"].isin(core_tickers)]
     sat_prices = price_df[price_df["ticker"].isin(sat_tickers)]
