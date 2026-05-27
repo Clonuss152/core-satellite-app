@@ -14,32 +14,14 @@ try:
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
     result = supabase.table("underlyings").select("*").execute()
 
     st.success("Supabase Verbindung erfolgreich.")
+
     st.write("Anzahl Underlyings in Datenbank:")
     st.write(len(result.data))
 
 except Exception as e:
     st.error("Fehler beim Starten oder bei der Supabase-Verbindung.")
-    st.code(str(e))import streamlit as st
-from supabase import create_client
-
-st.set_page_config(
-    page_title="Core Satellite System",
-    layout="wide"
-)
-
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-st.title("Core + Satellite Trading System")
-
-st.success("Supabase Verbindung erfolgreich.")
-
-tables = supabase.table("underlyings").select("*").execute()
-
-st.write("Anzahl Underlyings in Datenbank:")
-st.write(len(tables.data))
+    st.code(str(e))
