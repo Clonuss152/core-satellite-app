@@ -530,7 +530,9 @@ def run_daily_update():
     # ===================================================
     # SNAPSHOTS SPEICHERN
     # ===================================================
-
+    clear_today_snapshots(
+        supabase
+    )
     save_regime_snapshot(
         supabase,
         regime,
