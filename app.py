@@ -36,7 +36,8 @@ cash_df = pd.DataFrame(cash_result.data)
 
 rebalance_result = supabase.table("rebalance_state").select("*").execute()
 rebalance_df = pd.DataFrame(rebalance_result.data)
-
+status_result = supabase.table("system_status").select("*").execute()
+status_df = pd.DataFrame(status_result.data)
 open_positions = pd.DataFrame()
 
 if not trade_df.empty:
