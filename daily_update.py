@@ -572,7 +572,7 @@ def run_daily_update():
     ).upsert(
         {
             "status_key": "last_daily_update",
-            "status_value": str(datetime.now())
+            "status_value": str(datetime.now().isoformat()
         },
         on_conflict="status_key"
     ).execute()
