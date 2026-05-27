@@ -19,6 +19,7 @@ from momentum import calculate_momentum
 from regime import get_regime
 from orders import generate_core_orders, generate_sat_orders
 from utils import add_business_days
+from daily_update import run_daily_update
 from snapshot import (
     save_regime_snapshot,
     save_momentum_snapshot,
