@@ -2,6 +2,7 @@ from datetime import datetime
 
 import pandas as pd
 from supabase import create_client
+
 from data_loader import (
     download_full_history,
     transform_price_data
@@ -15,9 +16,11 @@ from config import (
     WEAK_CORE_WEIGHTS,
     SAT_WEIGHTS
 )
+
 from momentum import calculate_momentum
 from regime import get_regime
 from orders import generate_core_orders, generate_sat_orders
+
 from snapshot import (
     clear_today_snapshots,
     save_regime_snapshot,
@@ -53,51 +56,19 @@ def run_daily_update():
         try:
             print(f"Lade Daten für {ticker}")
 
-            data = yf.download(
-                ticker,
-                period="5y",
-                auto_adjust=True,
-                progress=False,
-                group_by="column"
-            )
+            data = download_full_history(ticker)
+            records = transform_price_data(ticker, data)
 
-            if data.empty:
+            if not records:
                 failed_tickers.append(ticker)
                 continue
 
-            if isinstance(data.columns, pd.MultiIndex):
-                data.columns = data.columns.get_level_values(0)
+            supabase.table("price_history").upsert(
+                records,
+                on_conflict="ticker,price_date"
+            ).execute()
 
-            data = data.reset_index()
-            date_column = data.columns[0]
-
-            required_columns = ["Open", "High", "Low", "Close", "Volume"]
-
-            if not all(col in data.columns for col in required_columns):
-                failed_tickers.append(ticker)
-                continue
-
-            records = []
-
-            for _, row in data.iterrows():
-                records.append({
-                    "ticker": ticker,
-                    "price_date": str(pd.to_datetime(row[date_column]).date()),
-                    "open": float(row["Open"]),
-                    "high": float(row["High"]),
-                    "low": float(row["Low"]),
-                    "close": float(row["Close"]),
-                    "adj_close": float(row["Close"]),
-                    "volume": float(row["Volume"])
-                })
-
-            if records:
-                supabase.table("price_history").upsert(
-                    records,
-                    on_conflict="ticker,price_date"
-                ).execute()
-
-                total_rows += len(records)
+            total_rows += len(records)
 
         except Exception as e:
             failed_tickers.append(ticker)
@@ -177,11 +148,13 @@ def run_daily_update():
         core_size = 3
         core_leverage = [2.0, 1.7, 1.3]
         core_sell_buffer = 2
+
     elif regime == "NORMAL":
         core_weights = NORMAL_CORE_WEIGHTS
         core_size = 5
         core_leverage = [1.8, 1.5, 1.3, 1.1, 1.0]
         core_sell_buffer = 7
+
     else:
         core_weights = WEAK_CORE_WEIGHTS
         core_size = 7
