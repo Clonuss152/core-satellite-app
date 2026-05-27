@@ -375,6 +375,31 @@ else:
     price_df["adj_close"] = pd.to_numeric(price_df["adj_close"])
     price_df = price_df.sort_values(["ticker", "price_date"])
 
+    # ===================================================
+# GEMEINSAMER KALENDER + FORWARD FILL
+# ===================================================
+
+pivot_close = price_df.pivot(
+    index="price_date",
+    columns="ticker",
+    values="adj_close"
+)
+
+# gemeinsamer Kalender
+pivot_close = pivot_close.sort_index()
+
+# globales forward fill
+pivot_close = pivot_close.ffill()
+
+# zurück ins Long Format
+price_df = pivot_close.reset_index().melt(
+    id_vars="price_date",
+    var_name="ticker",
+    value_name="adj_close"
+)
+
+price_df = price_df.dropna()
+
     def calculate_momentum(prices, lookbacks, weights):
         rows = []
 
