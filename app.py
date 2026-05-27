@@ -7,6 +7,7 @@ from datetime import date
 from config import CORE_TICKERS, SAT_TICKERS
 from utils import add_business_days
 from daily_update import run_daily_update
+from metadata import enrich_underlying_metadata
 from snapshot_loader import (
     load_latest_regime_snapshot,
     load_latest_momentum_snapshot,
