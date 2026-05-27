@@ -14,6 +14,17 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.success("Supabase Verbindung erfolgreich.")
 
+# ===================================================
+# UNDERLYINGS LADEN
+# ===================================================
+
+result = supabase.table("underlyings").select("*").execute()
+df = pd.DataFrame(result.data)
+
+# ===================================================
+# CASH SYSTEM
+# ===================================================
+
 st.header("Cash Management")
 
 with st.form("cash_form"):
@@ -36,16 +47,20 @@ with st.form("cash_form"):
         }).execute()
         st.success("Cash Buchung gespeichert.")
 
-st.subheader("Cash Historie")
-
 cash_result = supabase.table("cash_transactions").select("*").execute()
 cash_df = pd.DataFrame(cash_result.data)
+
+st.subheader("Cash Historie")
 
 if not cash_df.empty:
     st.dataframe(cash_df, use_container_width=True)
     st.metric("Gesamte Cash Bewegungen", f"{cash_df['amount'].sum():,.2f} €")
 else:
     st.info("Noch keine Cash Buchungen vorhanden.")
+
+# ===================================================
+# UNDERLYINGS
+# ===================================================
 
 st.header("Neues Underlying hinzufügen")
 
@@ -72,10 +87,11 @@ with st.form("add_underlying_form"):
         st.success("Underlying gespeichert.")
 
 st.header("Gespeicherte Underlyings")
-
-result = supabase.table("underlyings").select("*").execute()
-df = pd.DataFrame(result.data)
 st.dataframe(df, use_container_width=True)
+
+# ===================================================
+# TRADE ERFASSUNG
+# ===================================================
 
 st.header("Trade Erfassung")
 
@@ -123,6 +139,10 @@ with st.form("trade_form"):
 
         st.success("Trade gespeichert.")
 
+# ===================================================
+# TRADE HISTORIE
+# ===================================================
+
 st.header("Trade Historie")
 
 trade_result = supabase.table("trades").select("*").execute()
@@ -132,6 +152,10 @@ if not trade_df.empty:
     st.dataframe(trade_df, use_container_width=True)
 else:
     st.info("Noch keine Trades vorhanden.")
+
+# ===================================================
+# OFFENE POSITIONEN
+# ===================================================
 
 st.header("Offene Positionen")
 
@@ -161,6 +185,10 @@ if not trade_df.empty:
 else:
     st.info("Noch keine Trades vorhanden.")
 
+# ===================================================
+# KURSDATEN UPDATE
+# ===================================================
+
 st.header("Kursdaten Update")
 
 if st.button("Kursdaten aktualisieren"):
@@ -177,7 +205,7 @@ if st.button("Kursdaten aktualisieren"):
 
                 data = yf.download(
                     ticker,
-                    period="2y",
+                    period="3y",
                     auto_adjust=False,
                     progress=False,
                     group_by="column"
@@ -192,7 +220,6 @@ if st.button("Kursdaten aktualisieren"):
                     data.columns = data.columns.get_level_values(0)
 
                 data = data.reset_index()
-
                 date_column = data.columns[0]
 
                 required_columns = ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
@@ -229,3 +256,88 @@ if st.button("Kursdaten aktualisieren"):
         st.success(f"{inserted_rows} Kursdaten gespeichert.")
     else:
         st.warning("Keine Underlyings vorhanden.")
+
+# ===================================================
+# MOMENTUM ENGINE
+# ===================================================
+
+st.header("Momentum Ranking")
+
+price_result = supabase.table("price_history").select("*").execute()
+price_df = pd.DataFrame(price_result.data)
+
+if price_df.empty:
+    st.info("Noch keine Kursdaten vorhanden.")
+else:
+    price_df["price_date"] = pd.to_datetime(price_df["price_date"])
+    price_df["adj_close"] = pd.to_numeric(price_df["adj_close"])
+    price_df = price_df.sort_values(["ticker", "price_date"])
+
+    def calculate_momentum(prices, lookbacks, weights):
+        rows = []
+
+        for ticker, group in prices.groupby("ticker"):
+            group = group.sort_values("price_date").reset_index(drop=True)
+
+            if len(group) < max(lookbacks) + 1:
+                continue
+
+            latest_price = group.iloc[-1]["adj_close"]
+
+            score = 0
+            momentum_values = {}
+
+            for lookback, weight in zip(lookbacks, weights):
+                old_price = group.iloc[-lookback - 1]["adj_close"]
+                momentum = (latest_price / old_price) - 1
+                momentum_values[f"mom_{lookback}d"] = momentum
+                score += momentum * weight
+
+            rows.append({
+                "ticker": ticker,
+                "latest_date": group.iloc[-1]["price_date"].date(),
+                "latest_price": latest_price,
+                "score": score,
+                **momentum_values
+            })
+
+        result_df = pd.DataFrame(rows)
+
+        if not result_df.empty:
+            result_df = result_df.sort_values("score", ascending=False)
+            result_df["rank"] = range(1, len(result_df) + 1)
+
+        return result_df
+
+    core_tickers = []
+    sat_tickers = []
+
+    if not df.empty:
+        core_tickers = df.loc[df["strategy_role"] == "CORE", "ticker"].tolist()
+        sat_tickers = df.loc[df["strategy_role"] == "SATELLITE", "ticker"].tolist()
+
+    core_prices = price_df[price_df["ticker"].isin(core_tickers)]
+    sat_prices = price_df[price_df["ticker"].isin(sat_tickers)]
+
+    core_lookbacks = [63, 126, 189, 252, 504]
+    core_weights = [0.10, 0.20, 0.25, 0.25, 0.20]
+
+    sat_lookbacks = [21, 63, 126, 252]
+    sat_weights = [0.40, 0.35, 0.20, 0.05]
+
+    core_rank = calculate_momentum(core_prices, core_lookbacks, core_weights)
+    sat_rank = calculate_momentum(sat_prices, sat_lookbacks, sat_weights)
+
+    st.subheader("CORE Momentum Ranking")
+
+    if not core_rank.empty:
+        st.dataframe(core_rank, use_container_width=True)
+    else:
+        st.info("Noch nicht genug CORE-Kursdaten für Ranking vorhanden.")
+
+    st.subheader("SATELLITE Momentum Ranking")
+
+    if not sat_rank.empty:
+        st.dataframe(sat_rank, use_container_width=True)
+    else:
+        st.info("Noch nicht genug SATELLITE-Kursdaten für Ranking vorhanden.")
