@@ -68,7 +68,35 @@ tab_dashboard, tab_portfolio, tab_trades, tab_data, tab_admin = st.tabs(
 
 with tab_dashboard:
     st.header("Snapshot Dashboard")
+    st.subheader("System Status")
 
+    last_update = "Noch kein Update"
+
+    if not status_df.empty:
+        row = status_df[status_df["status_key"] == "last_daily_update"]
+
+        if not row.empty and row.iloc[0]["status_value"]:
+            last_update = row.iloc[0]["status_value"]
+
+    col_a, col_b, col_c = st.columns(3)
+
+    col_a.metric("Letztes Daily Update", last_update)
+
+    next_core_display = "Noch nicht gesetzt"
+    next_sat_display = "Noch nicht gesetzt"
+
+    if not rebalance_df.empty:
+        core_state = rebalance_df[rebalance_df["system_type"] == "CORE"]
+        sat_state = rebalance_df[rebalance_df["system_type"] == "SATELLITE"]
+
+        if not core_state.empty and core_state.iloc[0]["next_rebalance_date"]:
+            next_core_display = core_state.iloc[0]["next_rebalance_date"]
+
+        if not sat_state.empty and sat_state.iloc[0]["next_rebalance_date"]:
+            next_sat_display = sat_state.iloc[0]["next_rebalance_date"]
+
+    col_b.metric("Nächstes CORE Rebalance", next_core_display)
+    col_c.metric("Nächstes SAT Rebalance", next_sat_display)
     regime_snapshot = load_latest_regime_snapshot(supabase)
 
     if not regime_snapshot.empty:
