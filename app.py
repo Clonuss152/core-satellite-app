@@ -272,8 +272,8 @@ if st.button("Kursdaten aktualisieren"):
 
                 data = yf.download(
                     ticker,
-                    period="3y",
-                    auto_adjust=False,
+                    period="5y",
+                    auto_adjust=True,
                     progress=False,
                     group_by="column"
                 )
@@ -289,7 +289,7 @@ if st.button("Kursdaten aktualisieren"):
                 data = data.reset_index()
                 date_column = data.columns[0]
 
-                required_columns = ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
+                required_columns = ["Open", "High", "Low", "Close", "Volume"]
 
                 if not all(col in data.columns for col in required_columns):
                     failed_tickers.append(ticker)
@@ -306,7 +306,7 @@ if st.button("Kursdaten aktualisieren"):
                         "high": float(row["High"]),
                         "low": float(row["Low"]),
                         "close": float(row["Close"]),
-                        "adj_close": float(row["Adj Close"]),
+                        "adj_close": float(row["Close"]),
                         "volume": float(row["Volume"])
                     })
 
