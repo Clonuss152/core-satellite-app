@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import yfinance as yf
 from supabase import create_client
 from datetime import date
 
@@ -354,3 +355,81 @@ if not trade_df.empty:
 
 else:
     st.info("Noch keine Trades vorhanden.")
+# ===================================================
+# KURSDATEN UPDATE
+# ===================================================
+
+st.header("Kursdaten Update")
+
+if st.button("Kursdaten aktualisieren"):
+
+    if not df.empty:
+
+        tickers = df["ticker"].unique()
+
+        inserted_rows = 0
+
+        progress_bar = st.progress(0)
+
+        for idx, ticker in enumerate(tickers):
+
+            try:
+
+                data = yf.download(
+                    ticker,
+                    period="2y",
+                    auto_adjust=False,
+                    progress=False
+                )
+
+                if not data.empty:
+
+                    data.reset_index(inplace=True)
+
+                    for _, row in data.iterrows():
+
+                        record = {
+                            "ticker": ticker,
+                            "price_date": str(
+                                row["Date"].date()
+                            ),
+                            "open": float(row["Open"]),
+                            "high": float(row["High"]),
+                            "low": float(row["Low"]),
+                            "close": float(row["Close"]),
+                            "adj_close": float(row["Adj Close"]),
+                            "volume": float(row["Volume"])
+                        }
+
+                        try:
+
+                            supabase.table(
+                                "price_history"
+                            ).upsert(
+                                record
+                            ).execute()
+
+                            inserted_rows += 1
+
+                        except Exception:
+                            pass
+
+                progress_bar.progress(
+                    (idx + 1) / len(tickers)
+                )
+
+            except Exception as e:
+
+                st.warning(
+                    f"Fehler bei {ticker}: {e}"
+                )
+
+        st.success(
+            f"{inserted_rows} Kursdaten gespeichert."
+        )
+
+    else:
+
+        st.warning(
+            "Keine Underlyings vorhanden."
+        )
