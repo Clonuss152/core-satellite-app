@@ -255,6 +255,8 @@ with tab_trades:
 
             st.success("Trade gespeichert.")
 
+            st.rerun()
+
     st.subheader("Trade Historie")
 
     if not trade_df.empty:
