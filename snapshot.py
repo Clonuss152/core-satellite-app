@@ -1,5 +1,22 @@
 from datetime import date
+def clear_today_snapshots(supabase):
 
+    snapshot_date = str(date.today())
+
+    supabase.table("core_regime_snapshot").delete().eq(
+        "snapshot_date",
+        snapshot_date
+    ).execute()
+
+    supabase.table("momentum_snapshot").delete().eq(
+        "snapshot_date",
+        snapshot_date
+    ).execute()
+
+    supabase.table("order_snapshot").delete().eq(
+        "snapshot_date",
+        snapshot_date
+    ).execute()
 
 def save_regime_snapshot(
     supabase,
