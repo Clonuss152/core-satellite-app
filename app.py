@@ -5,22 +5,13 @@ from supabase import create_client
 from datetime import date
 
 st.set_page_config(page_title="Core Satellite System", layout="wide")
-
 st.title("Core + Satellite Trading System")
-
-# ===================================================
-# SUPABASE VERBINDUNG
-# ===================================================
 
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.success("Supabase Verbindung erfolgreich.")
-
-# ===================================================
-# STRATEGIE UNIVERSUM
-# ===================================================
 
 CORE_TICKERS = """
 AAPL MSFT NVDA AMZN META GOOGL TSLA AVGO COST AMD NFLX ADBE PEP CSCO INTC QCOM TXN AMGN INTU BKNG ISRG AMAT MU LRCX PANW KLAC MELI CDNS SNPS ADP BRK-B JPM V MA UNH XOM LLY PG JNJ HD CVX ABBV MRK KO BAC WMT ORCL CRM LIN MCD ACN CAT IBM GE RTX ADS.DE ALV.DE BAS.DE BAYN.DE BMW.DE DB1.DE DBK.DE DTE.DE EOAN.DE IFX.DE MBG.DE MUV2.DE RHM.DE SAP.DE SIE.DE VOW3.DE AIR.DE BEI.DE BNR.DE EVK.DE FRE.DE HEN3.DE LEG.DE MTX.DE P911.DE RWE.DE SY1.DE ZAL.DE AIXA.DE AT1.DE BC8.DE EVT.DE NEM.DE QIA.DE SRT3.DE ASML.AS MC.PA OR.PA SAN.MC SU.PA TTE.PA AI.PA DG.PA BN.PA ENI.MI ISP.MI ABI.BR
@@ -29,10 +20,6 @@ AAPL MSFT NVDA AMZN META GOOGL TSLA AVGO COST AMD NFLX ADBE PEP CSCO INTC QCOM T
 SAT_TICKERS = """
 1COV.DE ABT ADYEN.AS AFRM AFX.DE AMD APP ARM ASML.AS AVGO BABA BE BKNG BYDDF CCJ CELH CHWY COIN CRWD CVNA DASH DDOG DTG.DE DUOL ENPH ETSY EVGO FSLY FTNT GCT GLOB HOOD HWM IOT JOBY KLAC LSPD MDB MELI META MRVL NET NEXI.MI NICE NIO NOKIA.HE NOW NTRA NVDA OKTA ONON PANW PATH PAYC PDD PLTR QCOM RBLX RIVN RKLB ROKU SHOP SMCI SNOW SOFI SQ STMPA.PA TEAM TEM TOST TSLA TTD TWLO U UBER UPST UTDI.DE VEEV VRT VST VZ WAF.DE WCH.DE XPEV ZS UCG.MI UCB.BR NDA.DE SZG.DE NDX1.DE SAP.DE DB1.DE ALV.DE IFX.DE RHM.DE MBG.DE BMW.DE P911.DE AIR.DE RWE.DE SY1.DE BEI.DE BNR.DE ZAL.DE LEG.DE FRE.DE HEN3.DE AIXA.DE QIA.DE EVT.DE SRT3.DE BC8.DE
 """.split()
-
-# ===================================================
-# DATEN LADEN
-# ===================================================
 
 result = supabase.table("underlyings").select("*").execute()
 df = pd.DataFrame(result.data)
@@ -78,7 +65,7 @@ else:
     st.info("Noch keine Cash Buchungen vorhanden.")
 
 # ===================================================
-# UNIVERSUM IMPORT
+# UNIVERSUM
 # ===================================================
 
 st.header("Universum initialisieren")
@@ -112,11 +99,7 @@ if st.button("CORE/SATELLITE Universum importieren"):
             st.warning(f"Importfehler bei {ticker}: {e}")
 
     st.success(f"{imported} Underlyings importiert/aktualisiert.")
-    st.info("Bitte Seite neu laden, damit die Tabelle aktualisiert wird.")
-
-# ===================================================
-# UNDERLYINGS MANUELL
-# ===================================================
+    st.info("Bitte Seite neu laden.")
 
 st.header("Neues Underlying hinzufügen")
 
@@ -149,7 +132,7 @@ st.header("Gespeicherte Underlyings")
 st.dataframe(df, use_container_width=True)
 
 # ===================================================
-# TRADE ERFASSUNG
+# TRADES
 # ===================================================
 
 st.header("Trade Erfassung")
@@ -197,10 +180,6 @@ with st.form("trade_form"):
         }).execute()
 
         st.success("Trade gespeichert.")
-
-# ===================================================
-# TRADE HISTORIE
-# ===================================================
 
 st.header("Trade Historie")
 
@@ -250,7 +229,7 @@ else:
     st.info("Noch keine Trades vorhanden.")
 
 # ===================================================
-# KURSDATEN UPDATE - BATCH VERSION
+# KURSDATEN UPDATE
 # ===================================================
 
 st.header("Kursdaten Update")
@@ -261,7 +240,6 @@ if st.button("Kursdaten aktualisieren"):
 
         total_rows = 0
         failed_tickers = []
-
         progress_bar = st.progress(0)
 
         for idx, ticker in enumerate(tickers):
@@ -329,7 +307,6 @@ if st.button("Kursdaten aktualisieren"):
         if failed_tickers:
             st.warning("Folgende Ticker konnten nicht geladen werden:")
             st.write(failed_tickers)
-
     else:
         st.warning("Keine Underlyings vorhanden.")
 
@@ -344,11 +321,12 @@ chunk_size = 1000
 start = 0
 
 while True:
-
-    chunk = supabase.table("price_history") \
-        .select("*") \
-        .range(start, start + chunk_size - 1) \
+    chunk = (
+        supabase.table("price_history")
+        .select("*")
+        .range(start, start + chunk_size - 1)
         .execute()
+    )
 
     if not chunk.data:
         break
@@ -376,29 +354,25 @@ else:
     price_df = price_df.sort_values(["ticker", "price_date"])
 
     # ===================================================
-# GEMEINSAMER KALENDER + FORWARD FILL
-# ===================================================
+    # GEMEINSAMER KALENDER + FORWARD FILL
+    # ===================================================
 
-pivot_close = price_df.pivot(
-    index="price_date",
-    columns="ticker",
-    values="adj_close"
-)
+    pivot_close = price_df.pivot(
+        index="price_date",
+        columns="ticker",
+        values="adj_close"
+    )
 
-# gemeinsamer Kalender
-pivot_close = pivot_close.sort_index()
+    pivot_close = pivot_close.sort_index()
+    pivot_close = pivot_close.ffill()
 
-# globales forward fill
-pivot_close = pivot_close.ffill()
+    price_df = pivot_close.reset_index().melt(
+        id_vars="price_date",
+        var_name="ticker",
+        value_name="adj_close"
+    )
 
-# zurück ins Long Format
-price_df = pivot_close.reset_index().melt(
-    id_vars="price_date",
-    var_name="ticker",
-    value_name="adj_close"
-)
-
-price_df = price_df.dropna()
+    price_df = price_df.dropna()
 
     def calculate_momentum(prices, lookbacks, weights):
         rows = []
