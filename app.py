@@ -88,7 +88,10 @@ with tab_dashboard:
             ]
 
             timestamp_dt = pd.to_datetime(
-                timestamp_raw
+                timestamp_raw,
+                utc=True
+            ).tz_convert(
+                "Europe/Berlin"
             )
 
             last_update = timestamp_dt.strftime(
