@@ -399,221 +399,116 @@ if st.button("Kursdaten aktualisieren"):
 # MOMENTUM / STRATEGIE
 # ===================================================
 
-st.header("Momentum Ranking")
+# ===================================================
+# SNAPSHOT DASHBOARD
+# ===================================================
 
-all_price_rows = []
-chunk_size = 1000
-start = 0
+from snapshot_loader import (
+    load_latest_regime_snapshot,
+    load_latest_momentum_snapshot,
+    load_latest_order_snapshot
+)
 
-while True:
-    chunk = (
-        supabase.table("price_history")
-        .select("*")
-        .range(start, start + chunk_size - 1)
-        .execute()
+st.header("Snapshot Dashboard")
+
+# ===================================================
+# REGIME SNAPSHOT
+# ===================================================
+
+regime_snapshot = load_latest_regime_snapshot(
+    supabase
+)
+
+if not regime_snapshot.empty:
+
+    latest_regime = regime_snapshot.iloc[0]
+
+    st.subheader("Strategie Signale")
+
+    st.metric(
+        "CORE Regime",
+        latest_regime["regime"]
     )
 
-    if not chunk.data:
-        break
+    st.metric(
+        "Top10 Momentum",
+        f"{latest_regime['top10_momentum']:.2%}"
+    )
 
-    all_price_rows.extend(chunk.data)
+# ===================================================
+# MOMENTUM SNAPSHOTS
+# ===================================================
 
-    if len(chunk.data) < chunk_size:
-        break
+core_snapshot = load_latest_momentum_snapshot(
+    supabase,
+    "CORE"
+)
 
-    start += chunk_size
+sat_snapshot = load_latest_momentum_snapshot(
+    supabase,
+    "SATELLITE"
+)
 
-price_df = pd.DataFrame(all_price_rows)
+st.subheader("CORE Zielportfolio")
 
-if price_df.empty:
-    st.info("Noch keine Kursdaten vorhanden.")
+if not core_snapshot.empty:
+
+    st.dataframe(
+        core_snapshot.sort_values("rank"),
+        use_container_width=True
+    )
+
 else:
-    price_df["price_date"] = pd.to_datetime(price_df["price_date"])
-    price_df["adj_close"] = pd.to_numeric(price_df["adj_close"])
-    price_df = price_df.sort_values(["ticker", "price_date"])
+    st.info("Keine CORE Snapshots vorhanden.")
 
-    pivot_close = price_df.pivot(
-        index="price_date",
-        columns="ticker",
-        values="adj_close"
-    )
+st.subheader("SATELLITE Zielportfolio")
 
-    pivot_close = pivot_close.sort_index()
-    pivot_close = pivot_close.ffill()
+if not sat_snapshot.empty:
 
-    price_df = pivot_close.reset_index().melt(
-        id_vars="price_date",
-        var_name="ticker",
-        value_name="adj_close"
-    )
-
-    price_df = price_df.dropna()
-
-    core_tickers = df.loc[
-        df["strategy_role"].isin(["CORE", "BOTH"]),
-        "ticker"
-    ].tolist()
-
-    sat_tickers = df.loc[
-        df["strategy_role"].isin(["SATELLITE", "BOTH"]),
-        "ticker"
-    ].tolist()
-
-    core_prices = price_df[price_df["ticker"].isin(core_tickers)]
-    sat_prices = price_df[price_df["ticker"].isin(sat_tickers)]
-
-    regime, top10_mom = get_regime(core_prices)
-
-    st.header("Strategie Signale")
-    st.metric("CORE Regime", regime)
-
-    if top10_mom is not None:
-        st.metric("Top10 252d Momentum", f"{top10_mom:.2%}")
-
-    if regime == "STRONG":
-        core_weights = STRONG_CORE_WEIGHTS
-        core_size = 3
-        core_leverage = [2.0, 1.7, 1.3]
-        core_sell_buffer = 2
-    elif regime == "NORMAL":
-        core_weights = NORMAL_CORE_WEIGHTS
-        core_size = 5
-        core_leverage = [1.8, 1.5, 1.3, 1.1, 1.0]
-        core_sell_buffer = 7
-    else:
-        core_weights = WEAK_CORE_WEIGHTS
-        core_size = 7
-        core_leverage = [1.3, 1.2, 1.1, 1.0, 1.0, 1.0, 1.0]
-        core_sell_buffer = 1
-
-    core_rank = calculate_momentum(
-        core_prices,
-        CORE_LOOKBACKS,
-        core_weights
-    )
-
-    sat_rank = calculate_momentum(
-        sat_prices,
-        SAT_LOOKBACKS,
-        SAT_WEIGHTS
-    )
-
-    st.subheader("CORE Momentum Ranking")
-    st.dataframe(core_rank, use_container_width=True)
-
-    st.subheader("SATELLITE Momentum Ranking")
-    st.dataframe(sat_rank, use_container_width=True)
-
-    st.header("Zielportfolio")
-
-    core_target = core_rank.head(core_size).copy()
-    core_target["target_position"] = range(1, len(core_target) + 1)
-    core_target["target_leverage"] = core_leverage[:len(core_target)]
-    core_target["sell_buffer"] = core_sell_buffer
-
-    sat_target = sat_rank.head(1).copy()
-    sat_target["target_position"] = 1
-    sat_target["target_leverage"] = 10.0
-    sat_target["sell_buffer"] = 3
-
-    st.subheader("CORE Zielpositionen")
     st.dataframe(
-        core_target[
-            [
-                "target_position",
-                "ticker",
-                "rank",
-                "score",
-                "latest_price",
-                "target_leverage",
-                "sell_buffer"
-            ]
-        ],
+        sat_snapshot.sort_values("rank"),
         use_container_width=True
     )
 
-    st.subheader("SATELLITE Zielposition")
+else:
+    st.info("Keine SATELLITE Snapshots vorhanden.")
+
+# ===================================================
+# ORDER SNAPSHOTS
+# ===================================================
+
+core_orders_snapshot = load_latest_order_snapshot(
+    supabase,
+    "CORE"
+)
+
+sat_orders_snapshot = load_latest_order_snapshot(
+    supabase,
+    "SATELLITE"
+)
+
+st.header("Order Engine")
+
+st.subheader("CORE Orders")
+
+if not core_orders_snapshot.empty:
+
     st.dataframe(
-        sat_target[
-            [
-                "target_position",
-                "ticker",
-                "rank",
-                "score",
-                "latest_price",
-                "target_leverage",
-                "sell_buffer"
-            ]
-        ],
+        core_orders_snapshot,
         use_container_width=True
     )
-if st.button("Snapshot speichern"):
 
-    save_regime_snapshot(
-        supabase,
-        regime,
-        top10_mom
+else:
+    st.info("Keine CORE Orders vorhanden.")
+
+st.subheader("SATELLITE Orders")
+
+if not sat_orders_snapshot.empty:
+
+    st.dataframe(
+        sat_orders_snapshot,
+        use_container_width=True
     )
 
-    save_momentum_snapshot(
-        supabase,
-        "CORE",
-        core_target,
-        core_leverage,
-        core_sell_buffer
-    )
-
-    save_momentum_snapshot(
-        supabase,
-        "SATELLITE",
-        sat_target,
-        [10.0],
-        3
-    )
-    st.header("Order Engine")
-
-    core_orders = generate_core_orders(
-        core_target=core_target,
-        core_rank=core_rank,
-        open_positions=open_positions,
-        df=df,
-        core_size=core_size,
-        core_sell_buffer=core_sell_buffer
-    )
-
-    sat_orders = generate_sat_orders(
-        sat_target=sat_target,
-        sat_rank=sat_rank,
-        open_positions=open_positions,
-        df=df
-    )
-    save_order_snapshot(
-        supabase,
-        core_orders
-    )
-
-    save_order_snapshot(
-        supabase,
-        sat_orders
-    )
-
-    st.success("Snapshots gespeichert.")
-    if not core_rebalance_due:
-        core_orders["status"] = "VORSCHAU - kein CORE Rebalance heute"
-
-    if not sat_rebalance_due:
-        sat_orders["status"] = "VORSCHAU - kein SAT Rebalance heute"
-
-    st.subheader("CORE Orders")
-
-    if not core_orders.empty:
-        st.dataframe(core_orders, use_container_width=True)
-    else:
-        st.info("Keine CORE Orders.")
-
-    st.subheader("SATELLITE Orders")
-
-    if not sat_orders.empty:
-        st.dataframe(sat_orders, use_container_width=True)
-    else:
-        st.info("Keine SATELLITE Orders.")
+else:
+    st.info("Keine SATELLITE Orders vorhanden.")
