@@ -244,13 +244,14 @@ with tab_trades:
                 "turbo_wkn": turbo_wkn,
                 "turbo_isin": turbo_isin,
                 "issuer": issuer,
-                "quantity": quantity,
-                "price": price,
-                "gross_amount": theoretical_value,
-                "net_cash_effect": cash_flow,
-                "fees": implicit_costs,
-                "actual_leverage": actual_leverage,
-                "ko_level": ko_level,
+                "quantity": int(quantity),
+                "price": float(price),
+                "gross_amount": float(gross_amount),
+                "fees": float(fees),
+                "taxes": float(taxes),
+                "cash_flow": float(cash_flow),
+                "actual_leverage": float(actual_leverage),
+                "ko_level": float(ko_level),
                 "notes": notes
             }).execute()
 
