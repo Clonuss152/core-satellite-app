@@ -190,3 +190,387 @@ def run_daily_update():
     print(
         f"Fehlgeschlagene Ticker: {failed_tickers}"
     )
+    # ===================================================
+    # PRICE HISTORY LADEN
+    # ===================================================
+
+    all_price_rows = []
+
+    chunk_size = 1000
+    start = 0
+
+    while True:
+
+        chunk = (
+            supabase.table("price_history")
+            .select("*")
+            .range(
+                start,
+                start + chunk_size - 1
+            )
+            .execute()
+        )
+
+        if not chunk.data:
+            break
+
+        all_price_rows.extend(
+            chunk.data
+        )
+
+        if len(chunk.data) < chunk_size:
+            break
+
+        start += chunk_size
+
+    price_df = pd.DataFrame(
+        all_price_rows
+    )
+
+    print(
+        f"{len(price_df)} Preiszeilen geladen."
+    )
+
+    # ===================================================
+    # GEMEINSAMER KALENDER
+    # ===================================================
+
+    price_df["price_date"] = pd.to_datetime(
+        price_df["price_date"]
+    )
+
+    price_df["adj_close"] = pd.to_numeric(
+        price_df["adj_close"]
+    )
+
+    price_df = price_df.sort_values(
+        ["ticker", "price_date"]
+    )
+
+    pivot_close = price_df.pivot(
+        index="price_date",
+        columns="ticker",
+        values="adj_close"
+    )
+
+    pivot_close = pivot_close.sort_index()
+
+    # WICHTIG:
+    # gemeinsamer Kalender + ffill
+    pivot_close = pivot_close.ffill()
+
+    price_df = pivot_close.reset_index().melt(
+        id_vars="price_date",
+        var_name="ticker",
+        value_name="adj_close"
+    )
+
+    price_df = price_df.dropna()
+
+    print(
+        "Gemeinsamer Kalender erstellt."
+    )
+
+    # ===================================================
+    # CORE / SAT FILTER
+    # ===================================================
+
+    core_tickers = underlying_df.loc[
+        underlying_df["strategy_role"].isin(
+            ["CORE", "BOTH"]
+        ),
+        "ticker"
+    ].tolist()
+
+    sat_tickers = underlying_df.loc[
+        underlying_df["strategy_role"].isin(
+            ["SATELLITE", "BOTH"]
+        ),
+        "ticker"
+    ].tolist()
+
+    core_prices = price_df[
+        price_df["ticker"].isin(
+            core_tickers
+        )
+    ]
+
+    sat_prices = price_df[
+        price_df["ticker"].isin(
+            sat_tickers
+        )
+    ]
+
+    print(
+        f"{len(core_prices)} CORE Preiszeilen."
+    )
+
+    print(
+        f"{len(sat_prices)} SAT Preiszeilen."
+    )
+
+    # ===================================================
+    # REGIME
+    # ===================================================
+
+    regime, top10_mom = get_regime(
+        core_prices
+    )
+
+    print(
+        f"Regime: {regime}"
+    )
+
+    print(
+        f"Top10 Momentum: {top10_mom}"
+    )
+
+    # ===================================================
+    # REGIME PARAMETER
+    # ===================================================
+
+    if regime == "STRONG":
+
+        core_weights = STRONG_CORE_WEIGHTS
+
+        core_size = 3
+
+        core_leverage = [
+            2.0,
+            1.7,
+            1.3
+        ]
+
+        core_sell_buffer = 2
+
+    elif regime == "NORMAL":
+
+        core_weights = NORMAL_CORE_WEIGHTS
+
+        core_size = 5
+
+        core_leverage = [
+            1.8,
+            1.5,
+            1.3,
+            1.1,
+            1.0
+        ]
+
+        core_sell_buffer = 7
+
+    else:
+
+        core_weights = WEAK_CORE_WEIGHTS
+
+        core_size = 7
+
+        core_leverage = [
+            1.3,
+            1.2,
+            1.1,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ]
+
+        core_sell_buffer = 1
+
+    # ===================================================
+    # MOMENTUM
+    # ===================================================
+
+    core_rank = calculate_momentum(
+        core_prices,
+        CORE_LOOKBACKS,
+        core_weights
+    )
+
+    sat_rank = calculate_momentum(
+        sat_prices,
+        SAT_LOOKBACKS,
+        SAT_WEIGHTS
+    )
+
+    print(
+        f"{len(core_rank)} CORE Rankings."
+    )
+
+    print(
+        f"{len(sat_rank)} SAT Rankings."
+    )
+
+    # ===================================================
+    # ZIELPORTFOLIO
+    # ===================================================
+
+    core_target = core_rank.head(
+        core_size
+    ).copy()
+
+    core_target[
+        "target_position"
+    ] = range(
+        1,
+        len(core_target) + 1
+    )
+
+    core_target[
+        "target_leverage"
+    ] = core_leverage[
+        :len(core_target)
+    ]
+
+    core_target[
+        "sell_buffer"
+    ] = core_sell_buffer
+
+    sat_target = sat_rank.head(1).copy()
+
+    sat_target[
+        "target_position"
+    ] = 1
+
+    sat_target[
+        "target_leverage"
+    ] = 10.0
+
+    sat_target[
+        "sell_buffer"
+    ] = 3
+
+    # ===================================================
+    # OFFENE POSITIONEN
+    # ===================================================
+
+    open_positions = pd.DataFrame()
+
+    if not trade_df.empty:
+
+        grouped = trade_df.groupby(
+
+            [
+                "system_type",
+                "underlying_ticker",
+                "turbo_wkn"
+            ],
+
+            dropna=False
+
+        ).apply(
+
+            lambda x: pd.Series({
+
+                "BUY_QTY": x.loc[
+                    x["action"] == "BUY",
+                    "quantity"
+                ].sum(),
+
+                "SELL_QTY": x.loc[
+                    x["action"] == "SELL",
+                    "quantity"
+                ].sum()
+
+            })
+
+        ).reset_index()
+
+        grouped["OPEN_QTY"] = (
+            grouped["BUY_QTY"]
+            - grouped["SELL_QTY"]
+        )
+
+        open_positions = grouped[
+            grouped["OPEN_QTY"] > 0
+        ].copy()
+
+    print(
+        f"{len(open_positions)} offene Positionen."
+    )
+
+    # ===================================================
+    # ORDER ENGINE
+    # ===================================================
+
+    core_orders = generate_core_orders(
+
+        core_target=core_target,
+        core_rank=core_rank,
+
+        open_positions=open_positions,
+
+        df=underlying_df,
+
+        core_size=core_size,
+        core_sell_buffer=core_sell_buffer
+
+    )
+
+    sat_orders = generate_sat_orders(
+
+        sat_target=sat_target,
+        sat_rank=sat_rank,
+
+        open_positions=open_positions,
+
+        df=underlying_df
+
+    )
+
+    print(
+        f"{len(core_orders)} CORE Orders."
+    )
+
+    print(
+        f"{len(sat_orders)} SAT Orders."
+    )
+
+    # ===================================================
+    # SNAPSHOTS SPEICHERN
+    # ===================================================
+
+    save_regime_snapshot(
+        supabase,
+        regime,
+        top10_mom
+    )
+
+    save_momentum_snapshot(
+        supabase,
+        "CORE",
+        core_target,
+        core_leverage,
+        core_sell_buffer
+    )
+
+    save_momentum_snapshot(
+        supabase,
+        "SATELLITE",
+        sat_target,
+        [10.0],
+        3
+    )
+
+    save_order_snapshot(
+        supabase,
+        core_orders
+    )
+
+    save_order_snapshot(
+        supabase,
+        sat_orders
+    )
+
+    print(
+        "Snapshots gespeichert."
+    )
+
+    print(
+        "=== DAILY UPDATE ENDE ==="
+    )
+
+
+if __name__ == "__main__":
+
+    run_daily_update()
