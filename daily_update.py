@@ -98,15 +98,53 @@ def run_daily_update():
         try:
 
             print(f"Lade Daten für {ticker}")
+            latest_result = supabase.table(
+                "price_history"
+            ).select(
+                "price_date"
+            ).eq(
+                "ticker",
+                ticker
+            ).order(
+                "price_date",
+                desc=True
+            ).limit(1).execute()
 
-            data = yf.download(
-                ticker,
-                period="5y",
-                auto_adjust=True,
-                progress=False,
-                group_by="column"
-            )
+            start_date = None
 
+            if latest_result.data:
+
+                latest_date = latest_result.data[
+                    0
+                ]["price_date"]
+
+                latest_date = pd.to_datetime(
+                    latest_date
+                )
+
+                start_date = (
+                    latest_date
+                    + pd.Timedelta(days=1)
+                ).strftime("%Y-%m-%d")
+                        if start_date:
+
+                data = yf.download(
+                    ticker,
+                    start=start_date,
+                    auto_adjust=True,
+                    progress=False,
+                    group_by="column"
+                )
+
+            else:
+
+                data = yf.download(
+                    ticker,
+                    period="5y",
+                    auto_adjust=True,
+                    progress=False,
+                    group_by="column"
+                )
             if data.empty:
                 failed_tickers.append(ticker)
                 continue
