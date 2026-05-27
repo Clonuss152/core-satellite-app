@@ -4,56 +4,122 @@ import yfinance as yf
 from supabase import create_client
 from datetime import date
 
+from config import (
+    CORE_TICKERS,
+    SAT_TICKERS,
+    CORE_LOOKBACKS,
+    SAT_LOOKBACKS,
+    STRONG_CORE_WEIGHTS,
+    NORMAL_CORE_WEIGHTS,
+    WEAK_CORE_WEIGHTS,
+    SAT_WEIGHTS
+)
+
+from momentum import calculate_momentum
+from regime import get_regime
+from orders import generate_core_orders, generate_sat_orders
+from utils import add_business_days
+
+
 st.set_page_config(page_title="Core Satellite System", layout="wide")
 st.title("Core + Satellite Trading System")
 
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.success("Supabase Verbindung erfolgreich.")
 
-CORE_TICKERS = """
-AAPL MSFT NVDA AMZN META GOOGL TSLA AVGO COST AMD NFLX ADBE PEP CSCO INTC QCOM TXN AMGN INTU BKNG ISRG AMAT MU LRCX PANW KLAC MELI CDNS SNPS ADP BRK-B JPM V MA UNH XOM LLY PG JNJ HD CVX ABBV MRK KO BAC WMT ORCL CRM LIN MCD ACN CAT IBM GE RTX ADS.DE ALV.DE BAS.DE BAYN.DE BMW.DE DB1.DE DBK.DE DTE.DE EOAN.DE IFX.DE MBG.DE MUV2.DE RHM.DE SAP.DE SIE.DE VOW3.DE AIR.DE BEI.DE BNR.DE EVK.DE FRE.DE HEN3.DE LEG.DE MTX.DE P911.DE RWE.DE SY1.DE ZAL.DE AIXA.DE AT1.DE BC8.DE EVT.DE NEM.DE QIA.DE SRT3.DE ASML.AS MC.PA OR.PA SAN.MC SU.PA TTE.PA AI.PA DG.PA BN.PA ENI.MI ISP.MI ABI.BR
-""".split()
 
-SAT_TICKERS = """
-1COV.DE ABT ADYEN.AS AFRM AFX.DE AMD APP ARM ASML.AS AVGO BABA BE BKNG BYDDF CCJ CELH CHWY COIN CRWD CVNA DASH DDOG DTG.DE DUOL ENPH ETSY EVGO FSLY FTNT GCT GLOB HOOD HWM IOT JOBY KLAC LSPD MDB MELI META MRVL NET NEXI.MI NICE NIO NOKIA.HE NOW NTRA NVDA OKTA ONON PANW PATH PAYC PDD PLTR QCOM RBLX RIVN RKLB ROKU SHOP SMCI SNOW SOFI SQ STMPA.PA TEAM TEM TOST TSLA TTD TWLO U UBER UPST UTDI.DE VEEV VRT VST VZ WAF.DE WCH.DE XPEV ZS UCG.MI UCB.BR NDA.DE SZG.DE SAP.DE DB1.DE ALV.DE IFX.DE RHM.DE MBG.DE BMW.DE P911.DE AIR.DE RWE.DE SY1.DE BEI.DE BNR.DE ZAL.DE LEG.DE FRE.DE HEN3.DE AIXA.DE QIA.DE EVT.DE SRT3.DE BC8.DE
-""".split()
+# ===================================================
+# DATEN LADEN
+# ===================================================
 
-def get_underlying_info(ticker, df):
-    info = {
-        "company_name": None,
-        "isin": None,
-        "wkn": None,
-        "exchange": None,
-        "currency": None,
-    }
+underlying_result = supabase.table("underlyings").select("*").execute()
+df = pd.DataFrame(underlying_result.data)
 
-    if df.empty:
-        return info
+trade_result = supabase.table("trades").select("*").execute()
+trade_df = pd.DataFrame(trade_result.data)
 
-    row = df[df["ticker"] == ticker]
+rebalance_result = supabase.table("rebalance_state").select("*").execute()
+rebalance_df = pd.DataFrame(rebalance_result.data)
 
-    if row.empty:
-        return info
 
-    first = row.iloc[0]
+# ===================================================
+# REBALANCE STATUS
+# ===================================================
 
-    for key in info.keys():
-        if key in first:
-            info[key] = first.get(key)
+st.header("Rebalance Status")
 
-    return info
+today = date.today()
 
-result = supabase.table("underlyings").select("*").execute()
-df = pd.DataFrame(result.data)
+core_rebalance_due = True
+sat_rebalance_due = True
+
+if not rebalance_df.empty:
+    st.dataframe(rebalance_df, use_container_width=True)
+
+    core_state = rebalance_df[rebalance_df["system_type"] == "CORE"]
+    sat_state = rebalance_df[rebalance_df["system_type"] == "SATELLITE"]
+
+    if not core_state.empty:
+        next_core = core_state.iloc[0]["next_rebalance_date"]
+
+        if next_core:
+            next_core_date = pd.to_datetime(next_core).date()
+            core_rebalance_due = today >= next_core_date
+            st.metric("Nächstes CORE Rebalance", str(next_core_date))
+        else:
+            st.metric("Nächstes CORE Rebalance", "Noch nicht gesetzt")
+
+    if not sat_state.empty:
+        next_sat = sat_state.iloc[0]["next_rebalance_date"]
+
+        if next_sat:
+            next_sat_date = pd.to_datetime(next_sat).date()
+            sat_rebalance_due = today >= next_sat_date
+            st.metric("Nächstes SATELLITE Rebalance", str(next_sat_date))
+        else:
+            st.metric("Nächstes SATELLITE Rebalance", "Noch nicht gesetzt")
+
+st.write("CORE Rebalance heute aktiv:", core_rebalance_due)
+st.write("SATELLITE Rebalance heute aktiv:", sat_rebalance_due)
+
+with st.form("rebalance_execution_form"):
+    execution_system = st.selectbox("Ausgeführtes System", ["CORE", "SATELLITE"])
+    execution_date = st.date_input("Tatsächliches Ausführungsdatum", value=today)
+    submit_rebalance_execution = st.form_submit_button("Rebalance als ausgeführt speichern")
+
+    if submit_rebalance_execution:
+        cycle_days = 10 if execution_system == "CORE" else 21
+        next_date = add_business_days(execution_date, cycle_days)
+
+        supabase.table("rebalance_state").upsert(
+            {
+                "system_type": execution_system,
+                "last_rebalance_date": str(execution_date),
+                "next_rebalance_date": str(next_date),
+                "rebalance_cycle_days": cycle_days
+            },
+            on_conflict="system_type"
+        ).execute()
+
+        st.success(f"{execution_system} Rebalance gespeichert. Nächstes Rebalance: {next_date}")
+
+
+# ===================================================
+# CASH
+# ===================================================
 
 st.header("Cash Management")
 
 with st.form("cash_form"):
-    transaction_date = st.date_input("Datum", value=date.today())
-    transaction_type = st.selectbox("Typ", ["EINZAHLUNG", "AUSZAHLUNG", "STEUER", "GEBUEHR", "KORREKTUR"])
+    transaction_date = st.date_input("Datum", value=today)
+    transaction_type = st.selectbox(
+        "Typ",
+        ["EINZAHLUNG", "AUSZAHLUNG", "STEUER", "GEBUEHR", "KORREKTUR"]
+    )
     system_type = st.selectbox("System", ["GESAMT", "CORE", "SATELLITE"])
     amount = st.number_input("Betrag", step=0.01)
     broker_cash_after = st.number_input("Broker Cash nach Buchung", step=0.01)
@@ -69,6 +135,7 @@ with st.form("cash_form"):
             "broker_cash_after": broker_cash_after,
             "description": description
         }).execute()
+
         st.success("Cash Buchung gespeichert.")
 
 cash_result = supabase.table("cash_transactions").select("*").execute()
@@ -81,6 +148,11 @@ if not cash_df.empty:
     st.metric("Gesamte Cash Bewegungen", f"{cash_df['amount'].sum():,.2f} €")
 else:
     st.info("Noch keine Cash Buchungen vorhanden.")
+
+
+# ===================================================
+# UNIVERSUM
+# ===================================================
 
 st.header("Universum initialisieren")
 
@@ -99,11 +171,14 @@ if st.button("CORE/SATELLITE Universum importieren"):
         else:
             role = "SATELLITE"
 
-        supabase.table("underlyings").upsert({
-            "ticker": ticker,
-            "company_name": ticker,
-            "strategy_role": role
-        }, on_conflict="ticker").execute()
+        supabase.table("underlyings").upsert(
+            {
+                "ticker": ticker,
+                "company_name": ticker,
+                "strategy_role": role
+            },
+            on_conflict="ticker"
+        ).execute()
 
         imported += 1
 
@@ -119,23 +194,31 @@ with st.form("add_underlying_form"):
     strategy_role = st.selectbox("Strategie", ["CORE", "SATELLITE", "BOTH"])
     exchange = st.text_input("Börse")
     currency = st.text_input("Währung")
-    submit = st.form_submit_button("Speichern")
+    submit_underlying = st.form_submit_button("Speichern")
 
-    if submit:
-        supabase.table("underlyings").upsert({
-            "ticker": ticker,
-            "company_name": company_name,
-            "isin": isin,
-            "wkn": wkn,
-            "strategy_role": strategy_role,
-            "exchange": exchange,
-            "currency": currency
-        }, on_conflict="ticker").execute()
+    if submit_underlying:
+        supabase.table("underlyings").upsert(
+            {
+                "ticker": ticker,
+                "company_name": company_name,
+                "isin": isin,
+                "wkn": wkn,
+                "strategy_role": strategy_role,
+                "exchange": exchange,
+                "currency": currency
+            },
+            on_conflict="ticker"
+        ).execute()
 
         st.success("Underlying gespeichert.")
 
 st.header("Gespeicherte Underlyings")
 st.dataframe(df, use_container_width=True)
+
+
+# ===================================================
+# TRADES
+# ===================================================
 
 st.header("Trade Erfassung")
 
@@ -183,13 +266,15 @@ with st.form("trade_form"):
 
 st.header("Trade Historie")
 
-trade_result = supabase.table("trades").select("*").execute()
-trade_df = pd.DataFrame(trade_result.data)
-
 if not trade_df.empty:
     st.dataframe(trade_df, use_container_width=True)
 else:
     st.info("Noch keine Trades vorhanden.")
+
+
+# ===================================================
+# OFFENE POSITIONEN
+# ===================================================
 
 st.header("Offene Positionen")
 
@@ -213,12 +298,19 @@ if not trade_df.empty:
     open_positions = grouped[grouped["OPEN_QTY"] > 0].copy()
 
     if not open_positions.empty:
-        open_positions["ESTIMATED_POSITION_VALUE"] = open_positions["OPEN_QTY"] * open_positions["LAST_PRICE"]
+        open_positions["ESTIMATED_POSITION_VALUE"] = (
+            open_positions["OPEN_QTY"] * open_positions["LAST_PRICE"]
+        )
         st.dataframe(open_positions, use_container_width=True)
     else:
         st.info("Keine offenen Positionen.")
 else:
     st.info("Noch keine Trades vorhanden.")
+
+
+# ===================================================
+# KURSDATEN UPDATE
+# ===================================================
 
 st.header("Kursdaten Update")
 
@@ -280,6 +372,7 @@ if st.button("Kursdaten aktualisieren"):
                         records,
                         on_conflict="ticker,price_date"
                     ).execute()
+
                     total_rows += len(records)
 
                 progress_bar.progress((idx + 1) / len(tickers))
@@ -295,6 +388,11 @@ if st.button("Kursdaten aktualisieren"):
             st.write(failed_tickers)
     else:
         st.warning("Keine Underlyings vorhanden.")
+
+
+# ===================================================
+# MOMENTUM / STRATEGIE
+# ===================================================
 
 st.header("Momentum Ranking")
 
@@ -346,79 +444,18 @@ else:
 
     price_df = price_df.dropna()
 
-    def calculate_momentum(prices, lookbacks, weights):
-        rows = []
+    core_tickers = df.loc[
+        df["strategy_role"].isin(["CORE", "BOTH"]),
+        "ticker"
+    ].tolist()
 
-        for ticker, group in prices.groupby("ticker"):
-            group = group.sort_values("price_date").reset_index(drop=True)
-
-            if len(group) < max(lookbacks) + 1:
-                continue
-
-            latest_price = group.iloc[-1]["adj_close"]
-            score = 0
-            momentum_values = {}
-
-            for lookback, weight in zip(lookbacks, weights):
-                old_price = group.iloc[-lookback - 1]["adj_close"]
-                momentum = (latest_price / old_price) - 1
-                momentum_values[f"mom_{lookback}d"] = momentum
-                score += momentum * weight
-
-            rows.append({
-                "ticker": ticker,
-                "latest_date": group.iloc[-1]["price_date"].date(),
-                "latest_price": latest_price,
-                "score": score,
-                **momentum_values
-            })
-
-        result_df = pd.DataFrame(rows)
-
-        if not result_df.empty:
-            result_df = result_df.sort_values("score", ascending=False)
-            result_df["rank"] = range(1, len(result_df) + 1)
-
-        return result_df
-
-    core_tickers = df.loc[df["strategy_role"].isin(["CORE", "BOTH"]), "ticker"].tolist()
-    sat_tickers = df.loc[df["strategy_role"].isin(["SATELLITE", "BOTH"]), "ticker"].tolist()
+    sat_tickers = df.loc[
+        df["strategy_role"].isin(["SATELLITE", "BOTH"]),
+        "ticker"
+    ].tolist()
 
     core_prices = price_df[price_df["ticker"].isin(core_tickers)]
     sat_prices = price_df[price_df["ticker"].isin(sat_tickers)]
-
-    def get_regime(core_prices):
-        rows = []
-
-        for ticker, group in core_prices.groupby("ticker"):
-            group = group.sort_values("price_date").reset_index(drop=True)
-
-            if len(group) < 253:
-                continue
-
-            latest_price = group.iloc[-1]["adj_close"]
-            old_price = group.iloc[-253]["adj_close"]
-            mom_252 = (latest_price / old_price) - 1
-
-            rows.append({
-                "ticker": ticker,
-                "mom_252d": mom_252
-            })
-
-        regime_df = pd.DataFrame(rows)
-
-        if regime_df.empty:
-            return "UNKNOWN", None
-
-        regime_df = regime_df.sort_values("mom_252d", ascending=False)
-        top10_avg = regime_df.head(10)["mom_252d"].mean()
-
-        if top10_avg > 1.00:
-            return "STRONG", top10_avg
-        elif top10_avg > 0.30:
-            return "NORMAL", top10_avg
-        else:
-            return "WEAK", top10_avg
 
     regime, top10_mom = get_regime(core_prices)
 
@@ -429,27 +466,32 @@ else:
         st.metric("Top10 252d Momentum", f"{top10_mom:.2%}")
 
     if regime == "STRONG":
-        core_weights = [0.30, 0.20, 0.20, 0.20, 0.10]
+        core_weights = STRONG_CORE_WEIGHTS
         core_size = 3
         core_leverage = [2.0, 1.7, 1.3]
         core_sell_buffer = 2
     elif regime == "NORMAL":
-        core_weights = [0.10, 0.20, 0.25, 0.25, 0.20]
+        core_weights = NORMAL_CORE_WEIGHTS
         core_size = 5
         core_leverage = [1.8, 1.5, 1.3, 1.1, 1.0]
         core_sell_buffer = 7
     else:
-        core_weights = [0.00, 0.20, 0.25, 0.30, 0.25]
+        core_weights = WEAK_CORE_WEIGHTS
         core_size = 7
         core_leverage = [1.3, 1.2, 1.1, 1.0, 1.0, 1.0, 1.0]
         core_sell_buffer = 1
 
-    core_lookbacks = [63, 126, 189, 252, 504]
-    sat_lookbacks = [21, 63, 126, 252]
-    sat_weights = [0.40, 0.35, 0.20, 0.05]
+    core_rank = calculate_momentum(
+        core_prices,
+        CORE_LOOKBACKS,
+        core_weights
+    )
 
-    core_rank = calculate_momentum(core_prices, core_lookbacks, core_weights)
-    sat_rank = calculate_momentum(sat_prices, sat_lookbacks, sat_weights)
+    sat_rank = calculate_momentum(
+        sat_prices,
+        SAT_LOOKBACKS,
+        SAT_WEIGHTS
+    )
 
     st.subheader("CORE Momentum Ranking")
     st.dataframe(core_rank, use_container_width=True)
@@ -503,154 +545,38 @@ else:
 
     st.header("Order Engine")
 
-    core_orders = []
-    sat_orders = []
+    core_orders = generate_core_orders(
+        core_target=core_target,
+        core_rank=core_rank,
+        open_positions=open_positions,
+        df=df,
+        core_size=core_size,
+        core_sell_buffer=core_sell_buffer
+    )
 
-    current_core = []
-    current_sat = []
+    sat_orders = generate_sat_orders(
+        sat_target=sat_target,
+        sat_rank=sat_rank,
+        open_positions=open_positions,
+        df=df
+    )
 
-    if not open_positions.empty:
-        current_core = open_positions.loc[
-            open_positions["system_type"] == "CORE",
-            "underlying_ticker"
-        ].tolist()
+    if not core_rebalance_due:
+        core_orders["status"] = "VORSCHAU - kein CORE Rebalance heute"
 
-        current_sat = open_positions.loc[
-            open_positions["system_type"] == "SATELLITE",
-            "underlying_ticker"
-        ].tolist()
-
-    core_target_tickers = core_target["ticker"].tolist()
-    core_allowed_tickers = core_rank.head(core_size + core_sell_buffer)["ticker"].tolist()
-
-    for ticker in current_core:
-        meta = get_underlying_info(ticker, df)
-
-        if ticker in core_target_tickers:
-            action = "HOLD"
-            reason = "Im Zielportfolio"
-        elif ticker in core_allowed_tickers:
-            action = "HOLD"
-            reason = "Innerhalb Sell Buffer"
-        else:
-            action = "SELL"
-            reason = "Außerhalb Sell Buffer"
-
-        core_orders.append({
-            "system": "CORE",
-            "action": action,
-            "ticker": ticker,
-            "company_name": meta["company_name"],
-            "isin": meta["isin"],
-            "wkn": meta["wkn"],
-            "exchange": meta["exchange"],
-            "currency": meta["currency"],
-            "reason": reason
-        })
-
-    for _, row in core_target.iterrows():
-        ticker = row["ticker"]
-
-        if ticker not in current_core:
-            meta = get_underlying_info(ticker, df)
-
-            core_orders.append({
-                "system": "CORE",
-                "action": "BUY",
-                "ticker": ticker,
-                "company_name": meta["company_name"],
-                "isin": meta["isin"],
-                "wkn": meta["wkn"],
-                "exchange": meta["exchange"],
-                "currency": meta["currency"],
-                "reason": "Neue Zielposition",
-                "target_leverage": row["target_leverage"],
-                "rank": row["rank"]
-            })
-
-    if not sat_target.empty:
-        sat_top = sat_target.iloc[0]["ticker"]
-
-        if current_sat:
-            current_sat_ticker = current_sat[0]
-            current_rank_row = sat_rank[sat_rank["ticker"] == current_sat_ticker]
-
-            if not current_rank_row.empty:
-                current_rank = int(current_rank_row.iloc[0]["rank"])
-            else:
-                current_rank = 999
-
-            meta_current = get_underlying_info(current_sat_ticker, df)
-
-            if current_rank <= 4:
-                sat_orders.append({
-                    "system": "SATELLITE",
-                    "action": "HOLD",
-                    "ticker": current_sat_ticker,
-                    "company_name": meta_current["company_name"],
-                    "isin": meta_current["isin"],
-                    "wkn": meta_current["wkn"],
-                    "exchange": meta_current["exchange"],
-                    "currency": meta_current["currency"],
-                    "reason": "Innerhalb SAT Sell Buffer",
-                    "rank": current_rank
-                })
-            else:
-                sat_orders.append({
-                    "system": "SATELLITE",
-                    "action": "SELL",
-                    "ticker": current_sat_ticker,
-                    "company_name": meta_current["company_name"],
-                    "isin": meta_current["isin"],
-                    "wkn": meta_current["wkn"],
-                    "exchange": meta_current["exchange"],
-                    "currency": meta_current["currency"],
-                    "reason": "Rank > 4",
-                    "rank": current_rank
-                })
-
-                meta_new = get_underlying_info(sat_top, df)
-
-                sat_orders.append({
-                    "system": "SATELLITE",
-                    "action": "BUY",
-                    "ticker": sat_top,
-                    "company_name": meta_new["company_name"],
-                    "isin": meta_new["isin"],
-                    "wkn": meta_new["wkn"],
-                    "exchange": meta_new["exchange"],
-                    "currency": meta_new["currency"],
-                    "reason": "Neue Top-1 Position",
-                    "target_leverage": 10.0,
-                    "rank": 1
-                })
-        else:
-            meta = get_underlying_info(sat_top, df)
-
-            sat_orders.append({
-                "system": "SATELLITE",
-                "action": "BUY",
-                "ticker": sat_top,
-                "company_name": meta["company_name"],
-                "isin": meta["isin"],
-                "wkn": meta["wkn"],
-                "exchange": meta["exchange"],
-                "currency": meta["currency"],
-                "reason": "Keine offene SAT Position",
-                "target_leverage": 10.0,
-                "rank": 1
-            })
+    if not sat_rebalance_due:
+        sat_orders["status"] = "VORSCHAU - kein SAT Rebalance heute"
 
     st.subheader("CORE Orders")
 
-    if core_orders:
-        st.dataframe(pd.DataFrame(core_orders), use_container_width=True)
+    if not core_orders.empty:
+        st.dataframe(core_orders, use_container_width=True)
     else:
         st.info("Keine CORE Orders.")
 
     st.subheader("SATELLITE Orders")
 
-    if sat_orders:
-        st.dataframe(pd.DataFrame(sat_orders), use_container_width=True)
+    if not sat_orders.empty:
+        st.dataframe(sat_orders, use_container_width=True)
     else:
         st.info("Keine SATELLITE Orders.")
