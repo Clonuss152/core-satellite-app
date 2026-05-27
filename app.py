@@ -21,6 +21,31 @@ SAT_TICKERS = """
 1COV.DE ABT ADYEN.AS AFRM AFX.DE AMD APP ARM ASML.AS AVGO BABA BE BKNG BYDDF CCJ CELH CHWY COIN CRWD CVNA DASH DDOG DTG.DE DUOL ENPH ETSY EVGO FSLY FTNT GCT GLOB HOOD HWM IOT JOBY KLAC LSPD MDB MELI META MRVL NET NEXI.MI NICE NIO NOKIA.HE NOW NTRA NVDA OKTA ONON PANW PATH PAYC PDD PLTR QCOM RBLX RIVN RKLB ROKU SHOP SMCI SNOW SOFI SQ STMPA.PA TEAM TEM TOST TSLA TTD TWLO U UBER UPST UTDI.DE VEEV VRT VST VZ WAF.DE WCH.DE XPEV ZS UCG.MI UCB.BR NDA.DE SZG.DE SAP.DE DB1.DE ALV.DE IFX.DE RHM.DE MBG.DE BMW.DE P911.DE AIR.DE RWE.DE SY1.DE BEI.DE BNR.DE ZAL.DE LEG.DE FRE.DE HEN3.DE AIXA.DE QIA.DE EVT.DE SRT3.DE BC8.DE
 """.split()
 
+def get_underlying_info(ticker, df):
+    info = {
+        "company_name": None,
+        "isin": None,
+        "wkn": None,
+        "exchange": None,
+        "currency": None,
+    }
+
+    if df.empty:
+        return info
+
+    row = df[df["ticker"] == ticker]
+
+    if row.empty:
+        return info
+
+    first = row.iloc[0]
+
+    for key in info.keys():
+        if key in first:
+            info[key] = first.get(key)
+
+    return info
+
 result = supabase.table("underlyings").select("*").execute()
 df = pd.DataFrame(result.data)
 
@@ -499,6 +524,8 @@ else:
     core_allowed_tickers = core_rank.head(core_size + core_sell_buffer)["ticker"].tolist()
 
     for ticker in current_core:
+        meta = get_underlying_info(ticker, df)
+
         if ticker in core_target_tickers:
             action = "HOLD"
             reason = "Im Zielportfolio"
@@ -513,6 +540,11 @@ else:
             "system": "CORE",
             "action": action,
             "ticker": ticker,
+            "company_name": meta["company_name"],
+            "isin": meta["isin"],
+            "wkn": meta["wkn"],
+            "exchange": meta["exchange"],
+            "currency": meta["currency"],
             "reason": reason
         })
 
@@ -520,10 +552,17 @@ else:
         ticker = row["ticker"]
 
         if ticker not in current_core:
+            meta = get_underlying_info(ticker, df)
+
             core_orders.append({
                 "system": "CORE",
                 "action": "BUY",
                 "ticker": ticker,
+                "company_name": meta["company_name"],
+                "isin": meta["isin"],
+                "wkn": meta["wkn"],
+                "exchange": meta["exchange"],
+                "currency": meta["currency"],
                 "reason": "Neue Zielposition",
                 "target_leverage": row["target_leverage"],
                 "rank": row["rank"]
@@ -534,7 +573,6 @@ else:
 
         if current_sat:
             current_sat_ticker = current_sat[0]
-
             current_rank_row = sat_rank[sat_rank["ticker"] == current_sat_ticker]
 
             if not current_rank_row.empty:
@@ -542,11 +580,18 @@ else:
             else:
                 current_rank = 999
 
+            meta_current = get_underlying_info(current_sat_ticker, df)
+
             if current_rank <= 4:
                 sat_orders.append({
                     "system": "SATELLITE",
                     "action": "HOLD",
                     "ticker": current_sat_ticker,
+                    "company_name": meta_current["company_name"],
+                    "isin": meta_current["isin"],
+                    "wkn": meta_current["wkn"],
+                    "exchange": meta_current["exchange"],
+                    "currency": meta_current["currency"],
                     "reason": "Innerhalb SAT Sell Buffer",
                     "rank": current_rank
                 })
@@ -555,24 +600,42 @@ else:
                     "system": "SATELLITE",
                     "action": "SELL",
                     "ticker": current_sat_ticker,
+                    "company_name": meta_current["company_name"],
+                    "isin": meta_current["isin"],
+                    "wkn": meta_current["wkn"],
+                    "exchange": meta_current["exchange"],
+                    "currency": meta_current["currency"],
                     "reason": "Rank > 4",
                     "rank": current_rank
                 })
+
+                meta_new = get_underlying_info(sat_top, df)
 
                 sat_orders.append({
                     "system": "SATELLITE",
                     "action": "BUY",
                     "ticker": sat_top,
+                    "company_name": meta_new["company_name"],
+                    "isin": meta_new["isin"],
+                    "wkn": meta_new["wkn"],
+                    "exchange": meta_new["exchange"],
+                    "currency": meta_new["currency"],
                     "reason": "Neue Top-1 Position",
                     "target_leverage": 10.0,
                     "rank": 1
                 })
-
         else:
+            meta = get_underlying_info(sat_top, df)
+
             sat_orders.append({
                 "system": "SATELLITE",
                 "action": "BUY",
                 "ticker": sat_top,
+                "company_name": meta["company_name"],
+                "isin": meta["isin"],
+                "wkn": meta["wkn"],
+                "exchange": meta["exchange"],
+                "currency": meta["currency"],
                 "reason": "Keine offene SAT Position",
                 "target_leverage": 10.0,
                 "rank": 1
