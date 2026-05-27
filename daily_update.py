@@ -1,8 +1,11 @@
 from datetime import datetime
 
 import pandas as pd
-import yfinance as yf
 from supabase import create_client
+from data_loader import (
+    download_full_history,
+    transform_price_data
+)
 
 from config import (
     CORE_LOOKBACKS,
