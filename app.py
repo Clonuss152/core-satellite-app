@@ -339,8 +339,28 @@ if st.button("Kursdaten aktualisieren"):
 
 st.header("Momentum Ranking")
 
-price_result = supabase.table("price_history").select("*").limit(250000).execute()
-price_df = pd.DataFrame(price_result.data)
+all_price_rows = []
+chunk_size = 1000
+start = 0
+
+while True:
+
+    chunk = supabase.table("price_history") \
+        .select("*") \
+        .range(start, start + chunk_size - 1) \
+        .execute()
+
+    if not chunk.data:
+        break
+
+    all_price_rows.extend(chunk.data)
+
+    if len(chunk.data) < chunk_size:
+        break
+
+    start += chunk_size
+
+price_df = pd.DataFrame(all_price_rows)
 
 st.write("Geladene Kursdaten-Zeilen:", len(price_df))
 
