@@ -411,8 +411,8 @@ if st.button("Kursdaten aktualisieren"):
 
                             inserted_rows += 1
 
-                        except Exception:
-                            pass
+                       except Exception as e:
+    st.warning(f"Speicherfehler bei {ticker}: {e}")
 
                 progress_bar.progress(
                     (idx + 1) / len(tickers)
