@@ -217,7 +217,50 @@ with tab_trades:
 
 with tab_data:
     st.header("Daten")
+    st.subheader("Metadaten Enricher")
 
+    if st.button("Underlyings automatisch anreichern"):
+
+        success_count = 0
+        failed = []
+
+        tickers = df["ticker"].dropna().unique()
+
+        progress_bar = st.progress(0)
+
+        for idx, ticker in enumerate(tickers):
+
+            ok, err = enrich_underlying_metadata(
+                supabase,
+                ticker
+            )
+
+            if ok:
+                success_count += 1
+            else:
+                failed.append({
+                    "ticker": ticker,
+                    "error": err
+                })
+
+            progress_bar.progress(
+                (idx + 1) / len(tickers)
+            )
+
+        st.success(
+            f"{success_count} Underlyings angereichert."
+        )
+
+        if failed:
+
+            st.warning(
+                "Fehler bei einigen Tickern."
+            )
+
+            st.dataframe(
+                pd.DataFrame(failed),
+                use_container_width=True
+            )
     st.subheader("Gespeicherte Underlyings")
 
     if not df.empty:
