@@ -246,7 +246,7 @@ with tab_trades:
                 "issuer": issuer,
                 "quantity": int(quantity),
                 "price": float(price),
-                "gross_amount": float(gross_amount),
+                "gross_amount": float(quantity * price),
                 "fees": float(fees),
                 "taxes": float(taxes),
                 "cash_flow": float(cash_flow),
