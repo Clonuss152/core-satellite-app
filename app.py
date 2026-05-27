@@ -272,3 +272,85 @@ if not trade_df.empty:
 
 else:
     st.info("Noch keine Trades vorhanden.")
+# ===================================================
+# OFFENE POSITIONEN
+# ===================================================
+
+st.header("Offene Positionen")
+
+if not trade_df.empty:
+
+    grouped = trade_df.groupby(
+        [
+            "system_type",
+            "underlying_ticker",
+            "turbo_wkn"
+        ],
+        dropna=False
+    ).apply(
+
+        lambda x: pd.Series({
+
+            "BUY_QTY": x.loc[
+                x["action"] == "BUY",
+                "quantity"
+            ].sum(),
+
+            "SELL_QTY": x.loc[
+                x["action"] == "SELL",
+                "quantity"
+            ].sum(),
+
+            "LAST_PRICE": x.iloc[-1]["price"],
+
+            "LAST_LEVERAGE": x.iloc[-1].get(
+                "actual_leverage",
+                None
+            ),
+
+            "LAST_KO": x.iloc[-1].get(
+                "ko_level",
+                None
+            )
+
+        })
+
+    ).reset_index()
+
+    grouped["OPEN_QTY"] = (
+        grouped["BUY_QTY"]
+        - grouped["SELL_QTY"]
+    )
+
+    open_positions = grouped[
+        grouped["OPEN_QTY"] > 0
+    ]
+
+    if not open_positions.empty:
+
+        open_positions[
+            "ESTIMATED_POSITION_VALUE"
+        ] = (
+            open_positions["OPEN_QTY"]
+            * open_positions["LAST_PRICE"]
+        )
+
+        st.dataframe(
+            open_positions,
+            use_container_width=True
+        )
+
+        total_exposure = open_positions[
+            "ESTIMATED_POSITION_VALUE"
+        ].sum()
+
+        st.metric(
+            "Geschätztes investiertes Kapital",
+            f"{total_exposure:,.2f} €"
+        )
+
+    else:
+        st.info("Keine offenen Positionen.")
+
+else:
+    st.info("Noch keine Trades vorhanden.")
