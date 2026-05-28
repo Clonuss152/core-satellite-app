@@ -38,11 +38,26 @@ def load_table(table_name):
     result = supabase.table(table_name).select("*").execute()
     return pd.DataFrame(result.data)
 
-
 def safe_value(value):
+
     if pd.isna(value):
         return ""
+
     return value
+
+
+def color_order(val):
+
+    if val == "HOLD":
+        return "background-color: #d4edda; color: black"
+
+    if val == "BUY":
+        return "background-color: #fff3cd; color: black"
+
+    if val == "SELL":
+        return "background-color: #f8d7da; color: black"
+
+    return ""
 
 
 # ===================================================
