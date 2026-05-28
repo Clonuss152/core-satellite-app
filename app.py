@@ -49,6 +49,8 @@ if not trade_df.empty:
             "BUY_QTY": x.loc[x["action"] == "BUY", "quantity"].sum(),
             "SELL_QTY": x.loc[x["action"] == "SELL", "quantity"].sum(),
             "LAST_PRICE": x.iloc[-1]["price"],
+            "turbo_isin": x.iloc[-1].get("turbo_isin", ""),
+            "issuer": x.iloc[-1].get("issuer", ""),
             "LAST_LEVERAGE": x.iloc[-1].get("actual_leverage", None),
             "LAST_KO": x.iloc[-1].get("ko_level", None)
         })
