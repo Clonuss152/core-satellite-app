@@ -227,9 +227,37 @@ with tab_portfolio:
     st.subheader("Offene Positionen")
 
     if not open_positions.empty:
-        st.dataframe(open_positions, use_container_width=True)
-    else:
-        st.info("Keine offenen Positionen.")
+    st.dataframe(open_positions, use_container_width=True)
+
+    st.subheader("Position verkaufen")
+
+    for idx, row in open_positions.iterrows():
+
+        col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+
+        col1.write(row["underlying_ticker"])
+        col2.write(row["turbo_wkn"])
+        col3.write(f"Stück: {row['OPEN_QTY']}")
+
+        if col4.button(
+            "SELL",
+            key=f"sell_{idx}"
+        ):
+
+            st.session_state["prefill_trade"] = {
+                "action": "SELL",
+                "system_type": row["system_type"],
+                "underlying_ticker": row["underlying_ticker"],
+                "turbo_wkn": row["turbo_wkn"],
+                "quantity": float(row["OPEN_QTY"])
+            }
+
+            st.success(
+                "SELL wurde vorbereitet. Bitte in den Tab Trades wechseln."
+            )
+
+else:
+    st.info("Keine offenen Positionen.")
 
 
 with tab_trades:
