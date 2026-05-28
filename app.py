@@ -224,10 +224,14 @@ with tab_portfolio:
 
             st.success("Cash Buchung gespeichert.")
 
-    st.subheader("Offene Positionen")
+        st.subheader("Offene Positionen")
 
     if not open_positions.empty:
-        st.dataframe(open_positions, use_container_width=True)
+
+        st.dataframe(
+            open_positions,
+            use_container_width=True
+        )
 
         st.subheader("Position verkaufen")
 
@@ -239,10 +243,7 @@ with tab_portfolio:
             col2.write(row["turbo_wkn"])
             col3.write(f"Stück: {row['OPEN_QTY']}")
 
-            if col4.button(
-                "SELL",
-                key=f"sell_{idx}"
-            ):
+            if col4.button("SELL", key=f"sell_{idx}"):
 
                 st.session_state["prefill_trade"] = {
                     "action": "SELL",
@@ -252,11 +253,10 @@ with tab_portfolio:
                     "quantity": float(row["OPEN_QTY"])
                 }
 
-                st.success(
-                    "SELL wurde vorbereitet. Bitte in den Tab Trades wechseln."
-                )
+                st.success("SELL vorbereitet. Bitte in den Tab Trades wechseln.")
 
     else:
+
         st.info("Keine offenen Positionen.")
 
 
