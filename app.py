@@ -190,16 +190,53 @@ with tab_dashboard:
 
     st.subheader("CORE Orders")
 
-    if not core_orders_snapshot.empty:
-        st.dataframe(
-            core_orders_snapshot.style.map(
-                color_order,
-                subset=["action"]
-            ),
-            use_container_width=True
-        )
-    else:
-        st.info("Keine CORE Orders vorhanden.")
+if not core_orders_snapshot.empty:
+
+    styled_core = core_orders_snapshot.style.map(
+        color_order,
+        subset=["action"]
+    )
+
+    st.dataframe(
+        styled_core,
+        use_container_width=True
+    )
+
+    st.subheader("CORE Order Ausführung")
+
+    for idx, row in core_orders_snapshot.iterrows():
+
+        col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+
+        col1.write(row["ticker"])
+        col2.write(row["action"])
+        col3.write(row["reason"])
+
+        button_label = f"{row['action']} erfassen"
+
+        if col4.button(
+            button_label,
+            key=f"core_exec_{idx}"
+        ):
+
+            prefill = {
+                "action": row["action"],
+                "system_type": "CORE",
+                "underlying_ticker": row["ticker"]
+            }
+
+            if "target_leverage" in row:
+                prefill["target_leverage"] = row["target_leverage"]
+
+            st.session_state["prefill_trade"] = prefill
+
+            st.success(
+                f"{row['action']} vorbereitet. Bitte in Trades wechseln."
+            )
+
+else:
+
+    st.info("Keine CORE Orders vorhanden.")
 
     st.subheader("SATELLITE Orders")
 
