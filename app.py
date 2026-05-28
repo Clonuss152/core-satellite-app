@@ -323,7 +323,7 @@ with top5:
 st.caption(
     f"Letztes Update: {last_update}"
 )
-    st.header("Aktuelles Portfolio")
+st.header("Aktuelles Portfolio")
 
     if not open_positions.empty:
         core_positions = open_positions[
