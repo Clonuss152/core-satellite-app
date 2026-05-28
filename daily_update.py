@@ -4,7 +4,7 @@ import pandas as pd
 from supabase import create_client
 
 from data_loader import (
-    download_full_history,
+    download_price_history,
     transform_price_data
 )
 
@@ -29,7 +29,7 @@ from snapshot import (
 )
 
 
-def run_daily_update():
+def run_daily_update(incremental=True):
     from streamlit import secrets
 
     print("=== DAILY UPDATE START ===")
@@ -56,7 +56,11 @@ def run_daily_update():
         try:
             print(f"Lade Daten für {ticker}")
 
-            data = download_full_history(ticker)
+            data = download_price_history(
+                supabase,
+                ticker,
+                incremental=incremental 
+            )
             records = transform_price_data(ticker, data)
 
             if not records:
