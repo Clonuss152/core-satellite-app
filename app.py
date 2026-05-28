@@ -509,7 +509,7 @@ with tab_admin:
         if not core_state.empty:
             next_core = core_state.iloc[0]["next_rebalance_date"]
 
-            if next_core:
+            if pd.notna(next_core) and next_core:
                 next_core_date = pd.to_datetime(next_core).date()
                 core_rebalance_due = today >= next_core_date
                 col1.metric("Nächstes CORE Rebalance", str(next_core_date))
@@ -519,7 +519,7 @@ with tab_admin:
         if not sat_state.empty:
             next_sat = sat_state.iloc[0]["next_rebalance_date"]
 
-            if next_sat:
+            if pd.notna(next_sat) and next_sat:
                 next_sat_date = pd.to_datetime(next_sat).date()
                 sat_rebalance_due = today >= next_sat_date
                 col2.metric("Nächstes SATELLITE Rebalance", str(next_sat_date))
