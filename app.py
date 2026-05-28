@@ -441,34 +441,34 @@ with st.form("cash_state_form"):
         )
 
         st.rerun()
-    cash1, cash2, cash3, cash4 = st.columns(4)
+cash1, cash2, cash3, cash4 = st.columns(4)
 
-    cash1.metric(
-        "Broker Cash",
-        format_eur(capital_metrics.get("broker_cash", 0.0)),
-    )
+cash1.metric(
+    "Broker Cash",
+    format_eur(capital_metrics.get("broker_cash", 0.0)),
+)
 
-    cash2.metric(
-        "Systemkapital",
-        format_eur(capital_metrics.get("system_capital", 0.0)),
-    )
+cash2.metric(
+    "Systemkapital",
+    format_eur(capital_metrics.get("system_capital", 0.0)),
+)
 
-    cash3.metric(
-        "SAT Reserve",
-        format_eur(capital_metrics.get("satellite_reserve", 0.0)),
-    )
+cash3.metric(
+    "SAT Reserve",
+    format_eur(capital_metrics.get("satellite_reserve", 0.0)),
+)
 
-    cash4.metric(
-        "CORE verfügbar",
-        format_eur(capital_metrics.get("core_available_cash", 0.0)),
-    )
+cash4.metric(
+    "CORE verfügbar",
+    format_eur(capital_metrics.get("core_available_cash", 0.0)),
+)
 
-    st.caption(
-        "Logik: HOLD bleibt liegen. Freier Broker-Cash wird auf BUY-Orders verteilt. "
-        "Satellite ist auf 5 % Systemkapital begrenzt, sofern keine SAT-Position offen ist."
-    )
+st.caption(
+    "Logik: HOLD bleibt liegen. Freier Broker-Cash wird auf BUY-Orders verteilt. "
+    "Satellite ist auf 5 % Systemkapital begrenzt, sofern keine SAT-Position offen ist."
+)
 
-    st.divider()
+st.divider()
 
     # -------------------------------------------
     # Aktuelles Portfolio
