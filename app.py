@@ -205,6 +205,8 @@ if not core_orders_snapshot.empty:
     st.subheader("CORE Order Ausführung")
 
     for idx, row in core_orders_snapshot.iterrows():
+        if row["action"] == "HOLD":
+            continue
 
         col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
 
