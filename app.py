@@ -359,6 +359,56 @@ with tab_dashboard:
         st.metric("SAT Rebalance", next_sat_display)
 
     st.caption(f"Letztes Update: {last_update}")
+    with st.expander("Rebalance als ausgeführt speichern"):
+
+    with st.form("dashboard_rebalance_execution_form"):
+
+        execution_system = st.selectbox(
+            "Ausgeführtes System",
+            ["CORE", "SATELLITE"],
+            key="dashboard_execution_system"
+        )
+
+        execution_date = st.date_input(
+            "Tatsächliches Ausführungsdatum",
+            value=today,
+            format="DD.MM.YYYY",
+            key="dashboard_execution_date"
+        )
+
+        submit_rebalance_execution = st.form_submit_button(
+            "Speichern"
+        )
+
+        if submit_rebalance_execution:
+
+            cycle_days = (
+                10
+                if execution_system == "CORE"
+                else 21
+            )
+
+            next_date = add_business_days(
+                execution_date,
+                cycle_days
+            )
+
+            supabase.table("rebalance_state").upsert(
+                {
+                    "system_type": execution_system,
+                    "last_rebalance_date": str(execution_date),
+                    "next_rebalance_date": str(next_date),
+                    "rebalance_cycle_days": cycle_days
+                },
+                on_conflict="system_type"
+            ).execute()
+
+            st.success(
+                f"{execution_system} Rebalance gespeichert. "
+                f"Nächstes Rebalance: {next_date.strftime('%d.%m.%Y')}"
+            )
+
+            st.rerun()    
     st.divider()
 
     # -------------------------------------------
