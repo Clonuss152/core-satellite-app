@@ -325,14 +325,14 @@ st.caption(
 )
 st.header("Aktuelles Portfolio")
 
-    if not open_positions.empty:
-        core_positions = open_positions[
-            open_positions["system_type"] == "CORE"
-        ]
+if not open_positions.empty:
+    core_positions = open_positions[
+         open_positions["system_type"] == "CORE"
+       ]
 
-        sat_positions = open_positions[
-            open_positions["system_type"] == "SATELLITE"
-        ]
+    sat_positions = open_positions[
+        open_positions["system_type"] == "SATELLITE"
+     ]
 
         st.subheader("CORE Portfolio")
 
