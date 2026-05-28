@@ -265,7 +265,7 @@ with tab_trades:
 
     underlying_options = df["ticker"].tolist() if not df.empty else []
 
-   prefill = st.session_state.get(
+    prefill = st.session_state.get(
     "prefill_trade",
     {}
 )
