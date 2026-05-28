@@ -205,52 +205,124 @@ with tab_dashboard:
         st.success("Daily Update erfolgreich abgeschlossen.")
         st.rerun()
 
-    st.header("System Status")
-
     last_update = "Noch kein Update"
 
-    if not status_df.empty:
-        row = status_df[status_df["status_key"] == "last_daily_update"]
+if not status_df.empty:
+    row = status_df[
+        status_df["status_key"] == "last_daily_update"
+    ]
 
-        if not row.empty and row.iloc[0]["status_value"]:
-            timestamp_dt = pd.to_datetime(
-                row.iloc[0]["status_value"],
-                utc=True
-            ).tz_convert("Europe/Berlin")
+    if not row.empty and row.iloc[0]["status_value"]:
 
-            last_update = timestamp_dt.strftime("%d.%m.%Y %H:%M Uhr")
+        timestamp_dt = pd.to_datetime(
+            row.iloc[0]["status_value"],
+            utc=True
+        ).tz_convert("Europe/Berlin")
 
-    next_core_display = "Noch nicht gesetzt"
-    next_sat_display = "Noch nicht gesetzt"
+        last_update = timestamp_dt.strftime(
+            "%d.%m.%Y %H:%M"
+        )
 
-    if not rebalance_df.empty:
-        core_state = rebalance_df[rebalance_df["system_type"] == "CORE"]
-        sat_state = rebalance_df[rebalance_df["system_type"] == "SATELLITE"]
+next_core_display = "-"
+next_sat_display = "-"
 
-        if not core_state.empty and pd.notna(core_state.iloc[0]["next_rebalance_date"]):
-            next_core_display = pd.to_datetime(
-                core_state.iloc[0]["next_rebalance_date"]
-            ).strftime("%d.%m.%Y")
+if not rebalance_df.empty:
 
-        if not sat_state.empty and pd.notna(sat_state.iloc[0]["next_rebalance_date"]):
-            next_sat_display = pd.to_datetime(
-                sat_state.iloc[0]["next_rebalance_date"]
-            ).strftime("%d.%m.%Y")
+    core_state = rebalance_df[
+        rebalance_df["system_type"] == "CORE"
+    ]
 
-    col_a, col_b, col_c = st.columns(3)
-    col_a.metric("Letztes Daily Update", last_update)
-    col_b.metric("Nächstes CORE Rebalance", next_core_display)
-    col_c.metric("Nächstes SAT Rebalance", next_sat_display)
+    sat_state = rebalance_df[
+        rebalance_df["system_type"] == "SATELLITE"
+    ]
 
-    regime_snapshot = load_latest_regime_snapshot(supabase)
+    if not core_state.empty and pd.notna(
+        core_state.iloc[0]["next_rebalance_date"]
+    ):
 
-    if not regime_snapshot.empty:
-        latest_regime = regime_snapshot.iloc[0]
+        next_core_display = pd.to_datetime(
+            core_state.iloc[0]["next_rebalance_date"]
+        ).strftime("%d.%m.%Y")
 
-        col1, col2 = st.columns(2)
-        col1.metric("CORE Regime", latest_regime["regime"])
-        col2.metric("Top10 Momentum", f"{latest_regime['top10_momentum']:.2%}")
+    if not sat_state.empty and pd.notna(
+        sat_state.iloc[0]["next_rebalance_date"]
+    ):
 
+        next_sat_display = pd.to_datetime(
+            sat_state.iloc[0]["next_rebalance_date"]
+        ).strftime("%d.%m.%Y")
+
+regime_snapshot = load_latest_regime_snapshot(
+    supabase
+)
+
+latest_regime = {}
+
+if not regime_snapshot.empty:
+    latest_regime = regime_snapshot.iloc[0]
+
+top1, top2, top3, top4, top5 = st.columns(5)
+
+with top1:
+
+    if st.button(
+        "Daily Update",
+        key="dashboard_daily_update"
+    ):
+
+        with st.spinner("Update läuft..."):
+
+            run_daily_update(
+                incremental=True
+            )
+
+        st.success(
+            "Update abgeschlossen."
+        )
+
+        st.rerun()
+
+with top2:
+
+    st.metric(
+        "Regime",
+        latest_regime.get("regime", "-")
+    )
+
+with top3:
+
+    if latest_regime:
+
+        momentum_display = (
+            f"{latest_regime['top10_momentum']:.1%}"
+        )
+
+    else:
+
+        momentum_display = "-"
+
+    st.metric(
+        "Momentum",
+        momentum_display
+    )
+
+with top4:
+
+    st.metric(
+        "CORE Rebalance",
+        next_core_display
+    )
+
+with top5:
+
+    st.metric(
+        "SAT Rebalance",
+        next_sat_display
+    )
+
+st.caption(
+    f"Letztes Update: {last_update}"
+)
     st.header("Aktuelles Portfolio")
 
     if not open_positions.empty:
