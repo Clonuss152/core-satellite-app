@@ -146,7 +146,13 @@ if not trade_df.empty:
 
     grouped["OPEN_QTY"] = grouped["BUY_QTY"] - grouped["SELL_QTY"]
     open_positions = grouped[grouped["OPEN_QTY"] > 0].copy()
-latest_orders = load_latest_order_snapshot(supabase)
+core_latest_orders = load_latest_order_snapshot(supabase, "CORE")
+sat_latest_orders = load_latest_order_snapshot(supabase, "SATELLITE")
+
+latest_orders = pd.concat(
+    [core_latest_orders, sat_latest_orders],
+    ignore_index=True
+)
 
 if not latest_orders.empty:
 
