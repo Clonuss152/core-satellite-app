@@ -123,7 +123,15 @@ with tab_dashboard:
 
     next_core_display = "Noch nicht gesetzt"
     next_sat_display = "Noch nicht gesetzt"
+if pd.notna(next_core):
+    next_core_display = next_core.strftime(
+        "%d.%m.%Y"
+    )
 
+if pd.notna(next_sat):
+    next_sat_display = next_sat.strftime(
+        "%d.%m.%Y"
+    )
     if not rebalance_df.empty:
         core_state = rebalance_df[rebalance_df["system_type"] == "CORE"]
         sat_state = rebalance_df[rebalance_df["system_type"] == "SATELLITE"]
