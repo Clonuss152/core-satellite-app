@@ -87,7 +87,7 @@ def calculate_open_costs(trade_df):
 
 def calculate_capital_plan(
     trade_df,
-    cash_df,
+    cash_state_df,
     core_orders,
     sat_orders
 ):
