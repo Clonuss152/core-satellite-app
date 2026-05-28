@@ -146,7 +146,29 @@ if not trade_df.empty:
 
     grouped["OPEN_QTY"] = grouped["BUY_QTY"] - grouped["SELL_QTY"]
     open_positions = grouped[grouped["OPEN_QTY"] > 0].copy()
+latest_orders = load_latest_order_snapshot(supabase)
 
+if not latest_orders.empty:
+
+    latest_orders = latest_orders[
+        [
+            "system_type",
+            "ticker",
+            "action",
+            "reason"
+        ]
+    ].rename(
+        columns={
+            "ticker": "underlying_ticker",
+            "action": "signal"
+        }
+    )
+
+    open_positions = open_positions.merge(
+        latest_orders,
+        on=["system_type", "underlying_ticker"],
+        how="left"
+    )
     if not open_positions.empty:
         open_positions["ESTIMATED_POSITION_VALUE"] = (
             open_positions["OPEN_QTY"] * open_positions["LAST_PRICE"]
