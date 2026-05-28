@@ -129,10 +129,12 @@ with tab_dashboard:
         sat_state = rebalance_df[rebalance_df["system_type"] == "SATELLITE"]
 
         if not core_state.empty and core_state.iloc[0]["next_rebalance_date"]:
-            next_core_display = core_state.iloc[0]["next_rebalance_date"]
+            next_core_raw = core_state.iloc[0]["next_rebalance_date"]
+            next_core_display = pd.to_datetime(next_core_raw).strftime("%d.%m.%Y")
 
         if not sat_state.empty and sat_state.iloc[0]["next_rebalance_date"]:
-            next_sat_display = sat_state.iloc[0]["next_rebalance_date"]
+            next_sat_raw = sat_state.iloc[0]["next_rebalance_date"]
+            next_sat_display = pd.to_datetime(next_sat_raw).strftime("%d.%m.%Y")
 
     col_b.metric("Nächstes CORE Rebalance", next_core_display)
     col_c.metric("Nächstes SAT Rebalance", next_sat_display)
