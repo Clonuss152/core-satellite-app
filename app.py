@@ -265,47 +265,134 @@ with tab_trades:
 
     underlying_options = df["ticker"].tolist() if not df.empty else []
 
-    with st.form("trade_form"):
-        trade_date = st.date_input("Trade Datum")
-        action = st.selectbox("Aktion", ["BUY", "SELL"])
-        system_type = st.selectbox("System", ["CORE", "SATELLITE"])
-        underlying_ticker = st.selectbox("Underlying", underlying_options)
-        turbo_wkn = st.text_input("Turbo WKN")
-        turbo_isin = st.text_input("Turbo ISIN")
-        issuer = st.text_input("Emittent")
-        quantity = st.number_input("Stückzahl", step=1.0)
-        price = st.number_input("Kurs", step=0.01)
-        cash_flow = st.number_input("Tatsächlicher Cash Flow laut Broker", step=0.01)
-        actual_leverage = st.number_input("Tatsächlicher Hebel", step=0.1)
-        ko_level = st.number_input("KO Level", step=0.01)
-        notes = st.text_input("Notizen")
-        submit_trade = st.form_submit_button("Trade speichern")
+   prefill = st.session_state.get(
+    "prefill_trade",
+    {}
+)
 
-        if submit_trade:
-            theoretical_value = quantity * price
-            implicit_costs = abs(cash_flow - theoretical_value)
+with st.form("trade_form"):
 
-            supabase.table("trades").insert({
-                "trade_date": str(trade_date),
-                "system_type": system_type,
-                "action": action,
-                "underlying_ticker": underlying_ticker,
-                "turbo_wkn": turbo_wkn,
-                "turbo_isin": turbo_isin,
-                "issuer": issuer,
-                "quantity": int(quantity),
-                "price": float(price),
-                "gross_amount": float(quantity * price),
-                "fees": 0.0,
-                "taxes": 0.0,
-                "net_cash_effect": float(cash_flow),
-                "notes": notes
-            }).execute()
+    trade_date = st.date_input(
+        "Trade Datum"
+    )
 
-            st.success("Trade gespeichert.")
+    action = st.selectbox(
+        "Aktion",
+        ["BUY", "SELL"],
+        index=["BUY", "SELL"].index(
+            prefill.get("action", "BUY")
+        )
+    )
 
-            st.rerun()
+    system_type = st.selectbox(
+        "System",
+        ["CORE", "SATELLITE"],
+        index=["CORE", "SATELLITE"].index(
+            prefill.get("system_type", "CORE")
+        )
+    )
 
+    underlying_index = 0
+
+    if prefill.get("underlying_ticker") in underlying_options:
+
+        underlying_index = underlying_options.index(
+            prefill.get("underlying_ticker")
+        )
+
+    underlying_ticker = st.selectbox(
+        "Underlying",
+        underlying_options,
+        index=underlying_index
+    )
+
+    turbo_wkn = st.text_input(
+        "Turbo WKN",
+        value=prefill.get("turbo_wkn", "")
+    )
+
+    turbo_isin = st.text_input(
+        "Turbo ISIN"
+    )
+
+    issuer = st.text_input(
+        "Emittent"
+    )
+
+    quantity = st.number_input(
+        "Stückzahl",
+        step=1.0,
+        value=float(
+            prefill.get("quantity", 0.0)
+        )
+    )
+
+    price = st.number_input(
+        "Kurs",
+        step=0.01
+    )
+
+    cash_flow = st.number_input(
+        "Tatsächlicher Cash Flow laut Broker",
+        step=0.01
+    )
+
+    actual_leverage = st.number_input(
+        "Tatsächlicher Hebel",
+        step=0.1
+    )
+
+    ko_level = st.number_input(
+        "KO Level",
+        step=0.01
+    )
+
+    notes = st.text_input(
+        "Notizen"
+    )
+
+    submit_trade = st.form_submit_button(
+        "Trade speichern"
+    )
+
+    if submit_trade:
+
+        theoretical_value = quantity * price
+
+        implicit_costs = abs(
+            cash_flow - theoretical_value
+        )
+
+        supabase.table("trades").insert({
+
+            "trade_date": str(trade_date),
+            "system_type": system_type,
+            "action": action,
+            "underlying_ticker": underlying_ticker,
+            "turbo_wkn": turbo_wkn,
+            "turbo_isin": turbo_isin,
+            "issuer": issuer,
+            "quantity": int(quantity),
+            "price": float(price),
+            "gross_amount": float(quantity * price),
+            "fees": 0.0,
+            "taxes": 0.0,
+            "net_cash_effect": float(cash_flow),
+            "notes": notes
+
+        }).execute()
+
+        if "prefill_trade" in st.session_state:
+
+            del st.session_state[
+                "prefill_trade"
+            ]
+
+        st.success(
+            "Trade gespeichert."
+        )
+
+        st.rerun()
     st.subheader("Trade Historie")
 
     if not trade_df.empty:
