@@ -337,16 +337,20 @@ with st.form("trade_form"):
         step=0.01
     )
 
-    actual_leverage = st.number_input(
-        "Tatsächlicher Hebel",
-        step=0.1
-    )
+    actual_leverage = 0.0
+    ko_level = 0.0
 
-    ko_level = st.number_input(
-        "KO Level",
-        step=0.01
-    )
+    if action == "BUY":
 
+        actual_leverage = st.number_input(
+            "Tatsächlicher Hebel",
+            step=0.1
+        )
+
+        ko_level = st.number_input(
+            "KO Level",
+            step=0.01
+        )
     notes = st.text_input(
         "Notizen"
     )
