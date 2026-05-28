@@ -400,7 +400,7 @@ with tab_dashboard:
 
     capital_metrics, planned_core_orders, planned_sat_orders = calculate_capital_plan(
         trade_df=trade_df,
-        cash_df=cash_df,
+        cash_state_df=cash_state_df,
         core_orders=active_core_orders,
         sat_orders=active_sat_orders,
     )
