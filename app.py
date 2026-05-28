@@ -210,7 +210,23 @@ if not core_orders_snapshot.empty:
 
         col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
 
-        col1.write(row["ticker"])
+        underlying_row = df[df["ticker"] == row["ticker"]]
+
+        display_text = row["ticker"]
+
+        if not underlying_row.empty:
+
+            company_name = underlying_row.iloc[0].get("company_name", "")
+            isin = underlying_row.iloc[0].get("isin", "")
+            wkn = underlying_row.iloc[0].get("wkn", "")
+
+            display_text = (
+                f"{company_name} ({row['ticker']})\n"
+                f"ISIN: {isin}\n"
+                f"WKN: {wkn}"
+            )
+
+        col1.write(display_text)
         col2.write(row["action"])
         col3.write(row["reason"])
 
