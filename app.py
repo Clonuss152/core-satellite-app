@@ -203,20 +203,51 @@ with tab_dashboard:
     core_orders_snapshot = load_latest_order_snapshot(supabase, "CORE")
     sat_orders_snapshot = load_latest_order_snapshot(supabase, "SATELLITE")
 
-    st.header("Order Engine")
+        st.header("Order Engine")
+
+    def color_order(val):
+
+        if val == "HOLD":
+            return "background-color: #d4edda; color: black"
+
+        if val == "BUY":
+            return "background-color: #fff3cd; color: black"
+
+        if val == "SELL":
+            return "background-color: #f8d7da; color: black"
+
+        return ""
 
     st.subheader("CORE Orders")
 
     if not core_orders_snapshot.empty:
-        st.dataframe(core_orders_snapshot, use_container_width=True)
+
+        st.dataframe(
+            core_orders_snapshot.style.map(
+                color_order,
+                subset=["action"]
+            ),
+            use_container_width=True
+        )
+
     else:
+
         st.info("Keine CORE Orders vorhanden.")
 
     st.subheader("SATELLITE Orders")
 
     if not sat_orders_snapshot.empty:
-        st.dataframe(sat_orders_snapshot, use_container_width=True)
+
+        st.dataframe(
+            sat_orders_snapshot.style.map(
+                color_order,
+                subset=["action"]
+            ),
+            use_container_width=True
+        )
+
     else:
+
         st.info("Keine SATELLITE Orders vorhanden.")
 
 
