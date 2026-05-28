@@ -315,10 +315,12 @@ with st.form("trade_form"):
 
     turbo_isin = st.text_input(
         "Turbo ISIN"
+        value=prefill.get("turbo_isin", "")
     )
 
     issuer = st.text_input(
         "Emittent"
+        value=prefill.get("issuer", "")
     )
 
     quantity = st.number_input(
