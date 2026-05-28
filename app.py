@@ -410,7 +410,37 @@ with tab_dashboard:
     # -------------------------------------------
 
     st.subheader("Kapitalplanung")
+current_cash = get_latest_broker_cash()
 
+with st.form("cash_state_form"):
+
+    broker_cash_input = st.number_input(
+        "Aktueller Broker Cash",
+        value=float(current_cash),
+        step=0.01
+    )
+
+    submit_cash_state = st.form_submit_button(
+        "Broker Cash speichern"
+    )
+
+    if submit_cash_state:
+
+        supabase.table(
+            "cash_state"
+        ).insert(
+            {
+                "broker_cash": float(
+                    broker_cash_input
+                )
+            }
+        ).execute()
+
+        st.success(
+            "Broker Cash gespeichert."
+        )
+
+        st.rerun()
     cash1, cash2, cash3, cash4 = st.columns(4)
 
     cash1.metric(
