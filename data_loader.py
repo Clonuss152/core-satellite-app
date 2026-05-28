@@ -1,25 +1,40 @@
 import pandas as pd
 import yfinance as yf
+def get_latest_price_dates(
+    supabase
+):
 
-
-def get_latest_price_date(supabase, ticker):
     result = (
         supabase.table("price_history")
-        .select("price_date")
-        .eq("ticker", ticker)
-        .order("price_date", desc=True)
-        .limit(1)
+        .select(
+            "ticker,price_date"
+        )
+        .order(
+            "price_date",
+            desc=True
+        )
         .execute()
     )
 
-    if not result.data:
-        return None
+    latest_dates = {}
 
-    return pd.to_datetime(result.data[0]["price_date"]).date()
+    for row in result.data:
+
+        ticker = row["ticker"]
+
+        if ticker not in latest_dates:
+
+            latest_dates[ticker] = pd.to_datetime(
+                row["price_date"]
+            ).date()
+
+    return latest_dates
 
 
-def download_price_history(supabase, ticker, incremental=True):
-    latest_date = get_latest_price_date(supabase, ticker)
+def download_price_history(latest_dates, ticker, incremental=True):
+    latest_date = latest_dates.get(
+        ticker
+    )
 
     if incremental and latest_date:
         start_date = latest_date + pd.Timedelta(days=1)
