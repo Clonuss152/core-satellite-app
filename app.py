@@ -262,11 +262,12 @@ with tab_dashboard:
             st.dataframe(
                 core_positions[
                     [
+                        "signal",
                         "security",
-                        "turbo_wkn",
                         "OPEN_QTY",
                         "LAST_PRICE",
-                        "ESTIMATED_POSITION_VALUE"
+                        "ESTIMATED_POSITION_VALUE",
+                        "reason"
                     ]
                 ],
                 use_container_width=True
