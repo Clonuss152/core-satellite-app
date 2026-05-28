@@ -93,7 +93,7 @@ def calculate_capital_plan(
 ):
 
     broker_cash = get_latest_broker_cash(
-        cash_df
+        cash_state_df
     )
 
     open_costs = calculate_open_costs(
