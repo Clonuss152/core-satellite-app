@@ -334,19 +334,19 @@ if not open_positions.empty:
         open_positions["system_type"] == "SATELLITE"
      ]
 
-        st.subheader("CORE Portfolio")
+    st.subheader("CORE Portfolio")
 
-        if not core_positions.empty:
-            st.dataframe(
-                core_positions[
-                    [
-                        "signal",
-                        "security",
-                        "OPEN_QTY",
-                        "LAST_PRICE",
-                        "ESTIMATED_POSITION_VALUE",
-                        "reason"
-                    ]
+     if not core_positions.empty:
+         st.dataframe(
+            core_positions[
+                [
+                 "signal",
+                 "security",
+                 "OPEN_QTY",
+                 "LAST_PRICE",
+                 "ESTIMATED_POSITION_VALUE",
+                 "reason"
+                ]
                 ],
                 use_container_width=True
             )
