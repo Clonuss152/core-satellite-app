@@ -452,25 +452,31 @@ with tab_dashboard:
         active_sat_orders = sat_orders_snapshot[
             sat_orders_snapshot["action"] != "HOLD"
         ].copy()
-    if not open_positions.empty:
+        if not sat_orders_snapshot.empty:
 
-    existing_sat_positions = set(
-        open_positions[
-            open_positions["system_type"] == "SATELLITE"
-        ]["underlying_ticker"]
-    )
+            active_sat_orders = sat_orders_snapshot[
+                sat_orders_snapshot["action"] != "HOLD"
+            ].copy()
 
-    active_sat_orders = active_sat_orders[
-        ~(
-            (active_sat_orders["action"] == "BUY")
-            &
-            (
-                active_sat_orders["ticker"].isin(
-                    existing_sat_positions
+            if not open_positions.empty:
+
+                existing_sat_positions = set(
+                    open_positions[
+                        open_positions["system_type"] == "SATELLITE"
+                    ]["underlying_ticker"]
                 )
-            )
-        )
-    ]
+
+                active_sat_orders = active_sat_orders[
+                    ~(
+                        (active_sat_orders["action"] == "BUY")
+                        &
+                        (
+                            active_sat_orders["ticker"].isin(
+                                existing_sat_positions
+                            )
+                        )
+                    )
+                ]
     capital_metrics, planned_core_orders, planned_sat_orders = calculate_capital_plan(
         trade_df=trade_df,
         cash_state_df=cash_state_df,
