@@ -428,6 +428,25 @@ with tab_dashboard:
         active_core_orders = core_orders_snapshot[
             core_orders_snapshot["action"] != "HOLD"
         ].copy()
+        if not open_positions.empty:
+
+            existing_core_positions = set(
+                open_positions[
+                    open_positions["system_type"] == "CORE"
+                ]["underlying_ticker"]
+            )
+
+            active_core_orders = active_core_orders[
+                ~(
+                    (active_core_orders["action"] == "BUY")
+                    &
+                    (
+                        active_core_orders["ticker"].isin(
+                            existing_core_positions
+                        )
+                    )
+                )
+            ]
 
     if not sat_orders_snapshot.empty:
         active_sat_orders = sat_orders_snapshot[
