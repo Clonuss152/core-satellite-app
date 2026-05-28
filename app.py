@@ -483,7 +483,9 @@ with tab_admin:
         key="admin_full_refresh"
     ):
         with st.spinner("Full Data Refresh läuft..."):
-            run_daily_update()
+            run_daily_update(
+                incremental=False
+            )
 
         st.success("Full Data Refresh erfolgreich abgeschlossen.")
         st.rerun()
