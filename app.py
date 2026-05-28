@@ -159,46 +159,46 @@ with tab_dashboard:
 
     if not core_orders_snapshot.empty:
 
-    def color_order(val):
+        def color_order(val):
 
-        if val == "HOLD":
-            return "background-color: #d4edda; color: black"
+            if val == "HOLD":
+                return "background-color: #d4edda; color: black"
 
-        elif val == "BUY":
-            return "background-color: #fff3cd; color: black"
+            elif val == "BUY":
+                return "background-color: #fff3cd; color: black"
 
-        elif val == "SELL":
-            return "background-color: #f8d7da; color: black"
+            elif val == "SELL":
+                return "background-color: #f8d7da; color: black"
+    
+            return ""
 
-        return ""
+        st.dataframe(
+            core_orders_snapshot.style.map(
+                color_order,
+                subset=["action"]
+            ),
+            use_container_width=True
+        )
 
-    st.dataframe(
-        core_orders_snapshot.style.map(
-            color_order,
-            subset=["action"]
-        ),
-        use_container_width=True
-    )
+    else:
 
-else:
-
-    st.info("Keine CORE Orders vorhanden.")
+        st.info("Keine CORE Orders vorhanden.")
 
     st.subheader("SATELLITE Zielportfolio")
 
     if not sat_orders_snapshot.empty:
 
-    st.dataframe(
-        sat_orders_snapshot.style.map(
-            color_order,
-            subset=["action"]
-        ),
-        use_container_width=True
-    )
+        st.dataframe(
+            sat_orders_snapshot.style.map(
+                color_order,
+                subset=["action"]
+            ),
+            use_container_width=True
+        )
 
-else:
+    else:
 
-    st.info("Keine SATELLITE Orders vorhanden.")
+        st.info("Keine SATELLITE Orders vorhanden.")
 
     core_orders_snapshot = load_latest_order_snapshot(supabase, "CORE")
     sat_orders_snapshot = load_latest_order_snapshot(supabase, "SATELLITE")
