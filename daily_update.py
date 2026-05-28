@@ -4,6 +4,7 @@ import pandas as pd
 from supabase import create_client
 
 from data_loader import (
+    get_latest_price_dates,
     download_price_history,
     transform_price_data
 )
@@ -49,7 +50,9 @@ def run_daily_update(incremental=True):
 
     total_rows = 0
     failed_tickers = []
-
+    latest_dates = get_latest_price_dates(
+        supabase
+    )
     for ticker in tickers:
         ticker = str(ticker).strip()
 
