@@ -476,7 +476,7 @@ st.divider()
 
 st.subheader("Aktuelles Portfolio")
 
-    dashboard_positions = open_positions.copy()
+dashboard_positions = open_positions.copy()
 
     if not dashboard_positions.empty:
         core_latest_orders = load_latest_order_snapshot(
