@@ -198,194 +198,295 @@ with tab_dashboard:
 
     st.subheader("Dashboard")
 
-    if st.button("Daily Update ausführen", key="dashboard_daily_update"):
-        with st.spinner("Daily Update läuft..."):
-            run_daily_update(incremental=True)
-
-        st.success("Daily Update erfolgreich abgeschlossen.")
-        st.rerun()
+    # ==========================================
+    # STATUSDATEN
+    # ==========================================
 
     last_update = "Noch kein Update"
 
-if not status_df.empty:
-    row = status_df[
-        status_df["status_key"] == "last_daily_update"
-    ]
+    if not status_df.empty:
 
-    if not row.empty and row.iloc[0]["status_value"]:
+        row = status_df[
+            status_df["status_key"] == "last_daily_update"
+        ]
 
-        timestamp_dt = pd.to_datetime(
-            row.iloc[0]["status_value"],
-            utc=True
-        ).tz_convert("Europe/Berlin")
+        if not row.empty and row.iloc[0]["status_value"]:
 
-        last_update = timestamp_dt.strftime(
-            "%d.%m.%Y %H:%M"
-        )
+            timestamp_dt = pd.to_datetime(
+                row.iloc[0]["status_value"],
+                utc=True
+            ).tz_convert("Europe/Berlin")
 
-next_core_display = "-"
-next_sat_display = "-"
-
-if not rebalance_df.empty:
-
-    core_state = rebalance_df[
-        rebalance_df["system_type"] == "CORE"
-    ]
-
-    sat_state = rebalance_df[
-        rebalance_df["system_type"] == "SATELLITE"
-    ]
-
-    if not core_state.empty and pd.notna(
-        core_state.iloc[0]["next_rebalance_date"]
-    ):
-
-        next_core_display = pd.to_datetime(
-            core_state.iloc[0]["next_rebalance_date"]
-        ).strftime("%d.%m.%Y")
-
-    if not sat_state.empty and pd.notna(
-        sat_state.iloc[0]["next_rebalance_date"]
-    ):
-
-        next_sat_display = pd.to_datetime(
-            sat_state.iloc[0]["next_rebalance_date"]
-        ).strftime("%d.%m.%Y")
-
-regime_snapshot = load_latest_regime_snapshot(
-    supabase
-)
-
-latest_regime = {}
-
-if not regime_snapshot.empty:
-    latest_regime = regime_snapshot.iloc[0]
-
-top1, top2, top3, top4, top5 = st.columns(5)
-
-with top1:
-
-    if st.button(
-        "Daily Update",
-        key="dashboard_daily_update"
-    ):
-
-        with st.spinner("Update läuft..."):
-
-            run_daily_update(
-                incremental=True
+            last_update = timestamp_dt.strftime(
+                "%d.%m.%Y %H:%M"
             )
 
-        st.success(
-            "Update abgeschlossen."
-        )
+    next_core_display = "-"
+    next_sat_display = "-"
 
-        st.rerun()
+    if not rebalance_df.empty:
 
-with top2:
+        core_state = rebalance_df[
+            rebalance_df["system_type"] == "CORE"
+        ]
 
-    st.metric(
-        "Regime",
-        latest_regime.get("regime", "-")
-    )
+        sat_state = rebalance_df[
+            rebalance_df["system_type"] == "SATELLITE"
+        ]
 
-with top3:
-
-    if latest_regime:
-
-        momentum_display = (
-            f"{latest_regime['top10_momentum']:.1%}"
-        )
-
-    else:
-
-        momentum_display = "-"
-
-    st.metric(
-        "Momentum",
-        momentum_display
-    )
-
-with top4:
-
-    st.metric(
-        "CORE Rebalance",
-        next_core_display
-    )
-
-with top5:
-
-    st.metric(
-        "SAT Rebalance",
-        next_sat_display
-    )
-
-st.caption(
-    f"Letztes Update: {last_update}"
-)
-st.header("Aktuelles Portfolio")
-
-if not open_positions.empty:
-    core_positions = open_positions[
-         open_positions["system_type"] == "CORE"
-       ]
-
-    sat_positions = open_positions[
-        open_positions["system_type"] == "SATELLITE"
-     ]
-
-    st.subheader("CORE Portfolio")
-
-     if not core_positions.empty:
-         st.dataframe(
-            core_positions[
-                [
-                 "signal",
-                 "security",
-                 "OPEN_QTY",
-                 "LAST_PRICE",
-                 "ESTIMATED_POSITION_VALUE",
-                 "reason"
-                ]
-                ],
-                use_container_width=True
+        if (
+            not core_state.empty
+            and pd.notna(
+                core_state.iloc[0]["next_rebalance_date"]
             )
+        ):
+
+            next_core_display = pd.to_datetime(
+                core_state.iloc[0]["next_rebalance_date"]
+            ).strftime("%d.%m.%Y")
+
+        if (
+            not sat_state.empty
+            and pd.notna(
+                sat_state.iloc[0]["next_rebalance_date"]
+            )
+        ):
+
+            next_sat_display = pd.to_datetime(
+                sat_state.iloc[0]["next_rebalance_date"]
+            ).strftime("%d.%m.%Y")
+
+    regime_snapshot = load_latest_regime_snapshot(
+        supabase
+    )
+
+    latest_regime = {}
+
+    if not regime_snapshot.empty:
+        latest_regime = regime_snapshot.iloc[0]
+
+    # ==========================================
+    # KOMPAKTER HEADER
+    # ==========================================
+
+    top1, top2, top3, top4, top5 = st.columns(5)
+
+    with top1:
+
+        if st.button(
+            "Daily Update",
+            key="dashboard_daily_update"
+        ):
+
+            with st.spinner("Update läuft..."):
+
+                run_daily_update(
+                    incremental=True
+                )
+
+            st.success(
+                "Update abgeschlossen."
+            )
+
+            st.rerun()
+
+    with top2:
+
+        st.metric(
+            "Regime",
+            latest_regime.get("regime", "-")
+        )
+
+    with top3:
+
+        if latest_regime:
+
+            momentum_display = (
+                f"{latest_regime['top10_momentum']:.1%}"
+            )
+
         else:
-            st.info("Keine CORE Positionen.")
 
-        st.subheader("SATELLITE Portfolio")
+            momentum_display = "-"
 
-        if not sat_positions.empty:
+        st.metric(
+            "Momentum",
+            momentum_display
+        )
+
+    with top4:
+
+        st.metric(
+            "CORE Rebalance",
+            next_core_display
+        )
+
+    with top5:
+
+        st.metric(
+            "SAT Rebalance",
+            next_sat_display
+        )
+
+    st.caption(
+        f"Letztes Update: {last_update}"
+    )
+
+    st.divider()
+
+    # ==========================================
+    # AKTUELLES PORTFOLIO
+    # ==========================================
+
+    st.subheader("Aktuelles Portfolio")
+
+    if not open_positions.empty:
+
+        core_latest_orders = load_latest_order_snapshot(
+            supabase,
+            "CORE"
+        )
+
+        sat_latest_orders = load_latest_order_snapshot(
+            supabase,
+            "SATELLITE"
+        )
+
+        latest_orders = pd.concat(
+            [
+                core_latest_orders,
+                sat_latest_orders
+            ],
+            ignore_index=True
+        )
+
+        if not latest_orders.empty:
+
+            latest_orders = latest_orders[
+                [
+                    "system_type",
+                    "ticker",
+                    "action",
+                    "reason"
+                ]
+            ].rename(
+                columns={
+                    "ticker": "underlying_ticker",
+                    "action": "signal"
+                }
+            )
+
+            open_positions = open_positions.merge(
+                latest_orders,
+                on=[
+                    "system_type",
+                    "underlying_ticker"
+                ],
+                how="left"
+            )
+
+        core_positions = open_positions[
+            open_positions["system_type"] == "CORE"
+        ]
+
+        sat_positions = open_positions[
+            open_positions["system_type"] == "SATELLITE"
+        ]
+
+        # ======================================
+        # CORE
+        # ======================================
+
+        st.markdown("### CORE Portfolio")
+
+        if not core_positions.empty:
+
             st.dataframe(
-                sat_positions[
+                core_positions[
                     [
+                        "signal",
                         "security",
-                        "turbo_wkn",
                         "OPEN_QTY",
                         "LAST_PRICE",
-                        "ESTIMATED_POSITION_VALUE"
+                        "ESTIMATED_POSITION_VALUE",
+                        "reason"
                     ]
                 ],
                 use_container_width=True
             )
-        else:
-            st.info("Keine SATELLITE Positionen.")
-    else:
-        st.info("Keine offenen Positionen.")
 
-    st.header("Zielportfolio")
+        else:
+
+            st.info(
+                "Keine CORE Positionen."
+            )
+
+        # ======================================
+        # SATELLITE
+        # ======================================
+
+        st.markdown(
+            "### SATELLITE Portfolio"
+        )
+
+        if not sat_positions.empty:
+
+            st.dataframe(
+                sat_positions[
+                    [
+                        "signal",
+                        "security",
+                        "OPEN_QTY",
+                        "LAST_PRICE",
+                        "ESTIMATED_POSITION_VALUE",
+                        "reason"
+                    ]
+                ],
+                use_container_width=True
+            )
+
+        else:
+
+            st.info(
+                "Keine SATELLITE Positionen."
+            )
+
+    else:
+
+        st.info(
+            "Keine offenen Positionen."
+        )
+
+    st.divider()
+
+    # ==========================================
+    # ZIELPORTFOLIO
+    # ==========================================
+
+    st.subheader("Zielportfolio")
 
     core_snapshot = enrich_snapshot(
-        load_latest_momentum_snapshot(supabase, "CORE")
+        load_latest_momentum_snapshot(
+            supabase,
+            "CORE"
+        )
     )
 
     sat_snapshot = enrich_snapshot(
-        load_latest_momentum_snapshot(supabase, "SATELLITE")
+        load_latest_momentum_snapshot(
+            supabase,
+            "SATELLITE"
+        )
     )
 
-    st.subheader("CORE Zielportfolio")
+    # ======================================
+    # CORE ZIELPORTFOLIO
+    # ======================================
+
+    st.markdown("### CORE Zielportfolio")
 
     if not core_snapshot.empty:
+
         display_cols = [
             "rank",
             "ticker",
@@ -396,18 +497,34 @@ if not open_positions.empty:
             "target_leverage"
         ]
 
-        display_cols = [col for col in display_cols if col in core_snapshot.columns]
+        display_cols = [
+            col for col in display_cols
+            if col in core_snapshot.columns
+        ]
 
         st.dataframe(
-            core_snapshot.sort_values("rank")[display_cols],
+            core_snapshot.sort_values("rank")[
+                display_cols
+            ],
             use_container_width=True
         )
-    else:
-        st.info("Keine CORE Snapshots vorhanden.")
 
-    st.subheader("SATELLITE Zielportfolio")
+    else:
+
+        st.info(
+            "Keine CORE Snapshots vorhanden."
+        )
+
+    # ======================================
+    # SATELLITE ZIELPORTFOLIO
+    # ======================================
+
+    st.markdown(
+        "### SATELLITE Zielportfolio"
+    )
 
     if not sat_snapshot.empty:
+
         display_cols = [
             "rank",
             "ticker",
@@ -418,119 +535,170 @@ if not open_positions.empty:
             "target_leverage"
         ]
 
-        display_cols = [col for col in display_cols if col in sat_snapshot.columns]
+        display_cols = [
+            col for col in display_cols
+            if col in sat_snapshot.columns
+        ]
 
         st.dataframe(
-            sat_snapshot.sort_values("rank")[display_cols],
+            sat_snapshot.sort_values("rank")[
+                display_cols
+            ],
             use_container_width=True
         )
-    else:
-        st.info("Keine SATELLITE Snapshots vorhanden.")
 
-    st.header("Aktive Orders")
+    else:
+
+        st.info(
+            "Keine SATELLITE Snapshots vorhanden."
+        )
+
+    st.divider()
+
+    # ==========================================
+    # AKTIVE ORDERS
+    # ==========================================
+
+    st.subheader("Aktive Orders")
 
     core_orders_snapshot = enrich_snapshot(
-        load_latest_order_snapshot(supabase, "CORE")
+        load_latest_order_snapshot(
+            supabase,
+            "CORE"
+        )
     )
 
     sat_orders_snapshot = enrich_snapshot(
-        load_latest_order_snapshot(supabase, "SATELLITE")
+        load_latest_order_snapshot(
+            supabase,
+            "SATELLITE"
+        )
     )
 
-    active_core_orders = core_orders_snapshot[
-        core_orders_snapshot["action"] != "HOLD"
-    ] if not core_orders_snapshot.empty else pd.DataFrame()
+    active_core_orders = pd.DataFrame()
+    active_sat_orders = pd.DataFrame()
 
-    active_sat_orders = sat_orders_snapshot[
-        sat_orders_snapshot["action"] != "HOLD"
-    ] if not sat_orders_snapshot.empty else pd.DataFrame()
+    if not core_orders_snapshot.empty:
 
-    st.subheader("CORE Orders")
+        active_core_orders = (
+            core_orders_snapshot[
+                core_orders_snapshot["action"] != "HOLD"
+            ]
+        )
+
+    if not sat_orders_snapshot.empty:
+
+        active_sat_orders = (
+            sat_orders_snapshot[
+                sat_orders_snapshot["action"] != "HOLD"
+            ]
+        )
+
+    # ======================================
+    # CORE ORDERS
+    # ======================================
+
+    st.markdown("### CORE Orders")
 
     if not active_core_orders.empty:
-        order_cols = [
-            "action",
-            "ticker",
-            "company_name",
-            "isin",
-            "reason",
-            "target_leverage",
-            "rank"
-        ]
-
-        order_cols = [col for col in order_cols if col in active_core_orders.columns]
-
-        st.dataframe(
-            active_core_orders[order_cols].style.map(
-                color_order,
-                subset=["action"]
-            ),
-            use_container_width=True
-        )
-
-        st.subheader("CORE Order Ausführung")
 
         for idx, row in active_core_orders.iterrows():
-            col1, col2, col3, col4 = st.columns([3, 1, 3, 1])
 
-            col1.write(security_label(row["ticker"]))
-            col2.write(row["action"])
-            col3.write(row.get("reason", ""))
+            col1, col2, col3, col4 = st.columns(
+                [3, 1, 2, 1]
+            )
+
+            col1.write(
+                security_label(
+                    row["ticker"]
+                )
+            )
+
+            col2.write(
+                row["action"]
+            )
+
+            col3.write(
+                row.get(
+                    "reason",
+                    ""
+                )
+            )
 
             if col4.button(
-                f"{row['action']} erfassen",
-                key=f"core_exec_{idx}"
+                f"{row['action']}",
+                key=f"core_order_{idx}"
             ):
-                prepare_trade_from_order(row, "CORE")
-                st.success(
-                    f"{row['action']} vorbereitet. Bitte in den Tab Trades wechseln."
+
+                prepare_trade_from_order(
+                    row,
+                    "CORE"
                 )
+
+                st.success(
+                    "Trade vorbereitet. "
+                    "Bitte in den Trades-Tab wechseln."
+                )
+
     else:
-        st.info("Keine aktiven CORE Orders.")
 
-    st.subheader("SATELLITE Orders")
-
-    if not active_sat_orders.empty:
-        order_cols = [
-            "action",
-            "ticker",
-            "company_name",
-            "isin",
-            "reason",
-            "target_leverage",
-            "rank"
-        ]
-
-        order_cols = [col for col in order_cols if col in active_sat_orders.columns]
-
-        st.dataframe(
-            active_sat_orders[order_cols].style.map(
-                color_order,
-                subset=["action"]
-            ),
-            use_container_width=True
+        st.info(
+            "Keine aktiven CORE Orders."
         )
 
-        st.subheader("SATELLITE Order Ausführung")
+    # ======================================
+    # SATELLITE ORDERS
+    # ======================================
+
+    st.markdown(
+        "### SATELLITE Orders"
+    )
+
+    if not active_sat_orders.empty:
 
         for idx, row in active_sat_orders.iterrows():
-            col1, col2, col3, col4 = st.columns([3, 1, 3, 1])
 
-            col1.write(security_label(row["ticker"]))
-            col2.write(row["action"])
-            col3.write(row.get("reason", ""))
+            col1, col2, col3, col4 = st.columns(
+                [3, 1, 2, 1]
+            )
+
+            col1.write(
+                security_label(
+                    row["ticker"]
+                )
+            )
+
+            col2.write(
+                row["action"]
+            )
+
+            col3.write(
+                row.get(
+                    "reason",
+                    ""
+                )
+            )
 
             if col4.button(
-                f"{row['action']} erfassen",
-                key=f"sat_exec_{idx}"
+                f"{row['action']}",
+                key=f"sat_order_{idx}"
             ):
-                prepare_trade_from_order(row, "SATELLITE")
-                st.success(
-                    f"{row['action']} vorbereitet. Bitte in den Tab Trades wechseln."
-                )
-    else:
-        st.info("Keine aktiven SATELLITE Orders.")
 
+                prepare_trade_from_order(
+                    row,
+                    "SATELLITE"
+                )
+
+                st.success(
+                    "Trade vorbereitet. "
+                    "Bitte in den Trades-Tab wechseln."
+                )
+
+    else:
+
+        st.info(
+            "Keine aktiven SATELLITE Orders."
+        )
 
 # ===================================================
 # PORTFOLIO
