@@ -60,7 +60,7 @@ def run_daily_update(incremental=True):
             print(f"Lade Daten für {ticker}")
 
             data = download_price_history(
-                supabase,
+                latest_dates,
                 ticker,
                 incremental=incremental 
             )
