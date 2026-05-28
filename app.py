@@ -196,7 +196,7 @@ tab_dashboard, tab_portfolio, tab_trades, tab_data, tab_admin = st.tabs(
 
 with tab_dashboard:
 
-    st.header("Daily Update")
+    st.subheader("Dashboard")
 
     if st.button("Daily Update ausführen", key="dashboard_daily_update"):
         with st.spinner("Daily Update läuft..."):
