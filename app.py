@@ -447,7 +447,10 @@ with tab_dashboard:
                         "ESTIMATED_POSITION_VALUE",
                         "reason"
                     ]
-                ],
+                ].style.map(
+                    color_order,
+                    subset=["signal"]
+                ),
                 use_container_width=True
             )
 
