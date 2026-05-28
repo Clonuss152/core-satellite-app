@@ -70,7 +70,30 @@ def format_eur(value):
         return f"{float(value):,.0f} €"
     except Exception:
         return "-"
+        
+def get_latest_broker_cash():
 
+    cash_state_df = load_table("cash_state")
+
+    if cash_state_df.empty:
+        return 0.0
+
+    cash_state_df["snapshot_date"] = pd.to_datetime(
+        cash_state_df["snapshot_date"]
+    )
+
+    cash_state_df = cash_state_df.sort_values(
+        "snapshot_date"
+    )
+
+    latest_cash = cash_state_df.iloc[-1][
+        "broker_cash"
+    ]
+
+    if pd.isna(latest_cash):
+        return 0.0
+
+    return float(latest_cash)
 
 # ===================================================
 # LOAD DATA
