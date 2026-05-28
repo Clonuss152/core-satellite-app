@@ -70,30 +70,31 @@ def format_eur(value):
         return f"{float(value):,.0f} €"
     except Exception:
         return "-"
-        
-def get_latest_broker_cash():
 
-    cash_state_df = load_table("cash_state")
 
+
+def get_latest_broker_cash_from_state(cash_state_df):
     if cash_state_df.empty:
         return 0.0
 
-    cash_state_df["snapshot_date"] = pd.to_datetime(
-        cash_state_df["snapshot_date"]
+    temp_df = cash_state_df.copy()
+
+    if "snapshot_date" not in temp_df.columns:
+        return 0.0
+
+    temp_df["snapshot_date"] = pd.to_datetime(
+        temp_df["snapshot_date"]
     )
 
-    cash_state_df = cash_state_df.sort_values(
-        "snapshot_date"
-    )
+    temp_df = temp_df.sort_values("snapshot_date")
 
-    latest_cash = cash_state_df.iloc[-1][
-        "broker_cash"
-    ]
+    latest_cash = temp_df.iloc[-1].get("broker_cash", 0.0)
 
     if pd.isna(latest_cash):
         return 0.0
 
     return float(latest_cash)
+
 
 # ===================================================
 # LOAD DATA
@@ -106,7 +107,7 @@ cash_state_df = load_table("cash_state")
 rebalance_df = load_table("rebalance_state")
 status_df = load_table("system_status")
 
-# backward-compatible alias, because older code used df
+# backward-compatible alias for older code sections
 df = underlyings_df
 
 
@@ -194,14 +195,8 @@ if not trade_df.empty:
                     "quantity",
                 ].sum(),
                 "LAST_PRICE": x.iloc[-1]["price"],
-                "turbo_isin": x.iloc[-1].get(
-                    "turbo_isin",
-                    "",
-                ),
-                "issuer": x.iloc[-1].get(
-                    "issuer",
-                    "",
-                ),
+                "turbo_isin": x.iloc[-1].get("turbo_isin", ""),
+                "issuer": x.iloc[-1].get("issuer", ""),
             }
         )
     ).reset_index()
@@ -244,7 +239,6 @@ def prepare_trade_from_order(row, system_type):
 
         if not match.empty:
             pos = match.iloc[0]
-
             prefill["turbo_wkn"] = pos.get("turbo_wkn", "")
             prefill["turbo_isin"] = pos.get("turbo_isin", "")
             prefill["issuer"] = pos.get("issuer", "")
@@ -276,7 +270,7 @@ with tab_dashboard:
     st.subheader("Dashboard")
 
     # -------------------------------------------
-    # Statusdaten berechnen
+    # Statusdaten
     # -------------------------------------------
 
     last_update = "Noch kein Update"
@@ -368,21 +362,15 @@ with tab_dashboard:
     st.divider()
 
     # -------------------------------------------
-    # Latest Orders laden
+    # Orders laden
     # -------------------------------------------
 
     core_orders_snapshot = enrich_snapshot(
-        load_latest_order_snapshot(
-            supabase,
-            "CORE",
-        )
+        load_latest_order_snapshot(supabase, "CORE")
     )
 
     sat_orders_snapshot = enrich_snapshot(
-        load_latest_order_snapshot(
-            supabase,
-            "SATELLITE",
-        )
+        load_latest_order_snapshot(supabase, "SATELLITE")
     )
 
     active_core_orders = pd.DataFrame()
@@ -406,88 +394,74 @@ with tab_dashboard:
     )
 
     # -------------------------------------------
-    # Kapitalübersicht
+    # Kapitalplanung + Cash-State Formular
     # -------------------------------------------
 
     st.subheader("Kapitalplanung")
-current_cash = get_latest_broker_cash()
 
-with st.form("cash_state_form"):
+    current_cash = get_latest_broker_cash_from_state(cash_state_df)
 
-    broker_cash_input = st.number_input(
-        "Aktueller Broker Cash",
-        value=float(current_cash),
-        step=0.01
-    )
-
-    submit_cash_state = st.form_submit_button(
-        "Broker Cash speichern"
-    )
-
-    if submit_cash_state:
-
-        supabase.table(
-            "cash_state"
-        ).insert(
-            {
-                "broker_cash": float(
-                    broker_cash_input
-                )
-            }
-        ).execute()
-
-        st.success(
-            "Broker Cash gespeichert."
+    with st.form("cash_state_form"):
+        broker_cash_input = st.number_input(
+            "Aktueller Broker Cash",
+            value=float(current_cash),
+            step=0.01,
         )
 
-        st.rerun()
-cash1, cash2, cash3, cash4 = st.columns(4)
+        submit_cash_state = st.form_submit_button(
+            "Broker Cash speichern"
+        )
 
-cash1.metric(
-    "Broker Cash",
-    format_eur(capital_metrics.get("broker_cash", 0.0)),
-)
+        if submit_cash_state:
+            supabase.table("cash_state").insert(
+                {
+                    "broker_cash": float(broker_cash_input),
+                }
+            ).execute()
 
-cash2.metric(
-    "Systemkapital",
-    format_eur(capital_metrics.get("system_capital", 0.0)),
-)
+            st.success("Broker Cash gespeichert.")
+            st.rerun()
 
-cash3.metric(
-    "SAT Reserve",
-    format_eur(capital_metrics.get("satellite_reserve", 0.0)),
-)
+    cash1, cash2, cash3, cash4 = st.columns(4)
 
-cash4.metric(
-    "CORE verfügbar",
-    format_eur(capital_metrics.get("core_available_cash", 0.0)),
-)
+    cash1.metric(
+        "Broker Cash",
+        format_eur(capital_metrics.get("broker_cash", 0.0)),
+    )
 
-st.caption(
-    "Logik: HOLD bleibt liegen. Freier Broker-Cash wird auf BUY-Orders verteilt. "
-    "Satellite ist auf 5 % Systemkapital begrenzt, sofern keine SAT-Position offen ist."
-)
+    cash2.metric(
+        "Systemkapital",
+        format_eur(capital_metrics.get("system_capital", 0.0)),
+    )
 
-st.divider()
+    cash3.metric(
+        "SAT Reserve",
+        format_eur(capital_metrics.get("satellite_reserve", 0.0)),
+    )
+
+    cash4.metric(
+        "CORE verfügbar",
+        format_eur(capital_metrics.get("core_available_cash", 0.0)),
+    )
+
+    st.caption(
+        "Logik: HOLD bleibt liegen. Systemkapital = Broker Cash + Einstandswerte offener Positionen. "
+        "Satellite ist auf 5 % Systemkapital begrenzt, sofern keine SAT-Position offen ist."
+    )
+
+    st.divider()
 
     # -------------------------------------------
     # Aktuelles Portfolio
     # -------------------------------------------
 
-st.subheader("Aktuelles Portfolio")
+    st.subheader("Aktuelles Portfolio")
 
-dashboard_positions = open_positions.copy()
+    dashboard_positions = open_positions.copy()
 
     if not dashboard_positions.empty:
-        core_latest_orders = load_latest_order_snapshot(
-            supabase,
-            "CORE",
-        )
-
-        sat_latest_orders = load_latest_order_snapshot(
-            supabase,
-            "SATELLITE",
-        )
+        core_latest_orders = load_latest_order_snapshot(supabase, "CORE")
+        sat_latest_orders = load_latest_order_snapshot(supabase, "SATELLITE")
 
         latest_orders = pd.concat(
             [
@@ -614,9 +588,7 @@ dashboard_positions = open_positions.copy()
                 key=f"core_order_{idx}",
             ):
                 prepare_trade_from_order(row, "CORE")
-                st.success(
-                    "Trade vorbereitet. Bitte in den Trades-Tab wechseln."
-                )
+                st.success("Trade vorbereitet. Bitte in den Trades-Tab wechseln.")
     else:
         st.info("Keine aktiven CORE Orders.")
 
@@ -641,9 +613,7 @@ dashboard_positions = open_positions.copy()
                 key=f"sat_order_{idx}",
             ):
                 prepare_trade_from_order(row, "SATELLITE")
-                st.success(
-                    "Trade vorbereitet. Bitte in den Trades-Tab wechseln."
-                )
+                st.success("Trade vorbereitet. Bitte in den Trades-Tab wechseln.")
     else:
         st.info("Keine aktiven SATELLITE Orders.")
 
@@ -656,17 +626,11 @@ dashboard_positions = open_positions.copy()
     st.subheader("Zielportfolio")
 
     core_snapshot = enrich_snapshot(
-        load_latest_momentum_snapshot(
-            supabase,
-            "CORE",
-        )
+        load_latest_momentum_snapshot(supabase, "CORE")
     )
 
     sat_snapshot = enrich_snapshot(
-        load_latest_momentum_snapshot(
-            supabase,
-            "SATELLITE",
-        )
+        load_latest_momentum_snapshot(supabase, "SATELLITE")
     )
 
     st.markdown("### CORE Zielportfolio")
@@ -730,11 +694,7 @@ with tab_portfolio:
     st.subheader("Cash Historie")
 
     if not cash_df.empty:
-        st.dataframe(
-            cash_df,
-            use_container_width=True,
-        )
-
+        st.dataframe(cash_df, use_container_width=True)
         st.metric(
             "Gesamte Cash Bewegungen",
             f"{cash_df['amount'].sum():,.2f} €",
@@ -771,18 +731,12 @@ with tab_portfolio:
             ],
         )
 
-        amount = st.number_input(
-            "Betrag",
-            step=0.01,
-        )
-
+        amount = st.number_input("Betrag", step=0.01)
         broker_cash_after = st.number_input(
             "Broker Cash nach Buchung",
             step=0.01,
         )
-
         description = st.text_input("Beschreibung")
-
         submit_cash = st.form_submit_button("Cash Buchung speichern")
 
         if submit_cash:
@@ -803,10 +757,7 @@ with tab_portfolio:
     st.subheader("Offene Positionen")
 
     if not open_positions.empty:
-        st.dataframe(
-            open_positions,
-            use_container_width=True,
-        )
+        st.dataframe(open_positions, use_container_width=True)
 
         st.subheader("Position verkaufen")
 
@@ -828,9 +779,7 @@ with tab_portfolio:
                     "quantity": float(row["OPEN_QTY"]),
                 }
 
-                st.success(
-                    "SELL vorbereitet. Bitte in den Tab Trades wechseln."
-                )
+                st.success("SELL vorbereitet. Bitte in den Tab Trades wechseln.")
     else:
         st.info("Keine offenen Positionen.")
 
@@ -857,8 +806,7 @@ with tab_trades:
 
     if prefill.get("suggested_amount"):
         st.info(
-            f"Vorgeschlagener Zielbetrag: "
-            f"{float(prefill.get('suggested_amount')):,.0f} €"
+            f"Vorgeschlagener Zielbetrag: {float(prefill.get('suggested_amount')):,.0f} €"
         )
 
     with st.form("trade_form"):
@@ -871,9 +819,7 @@ with tab_trades:
         action = st.selectbox(
             "Aktion",
             ["BUY", "SELL"],
-            index=["BUY", "SELL"].index(
-                prefill.get("action", "BUY")
-            ),
+            index=["BUY", "SELL"].index(prefill.get("action", "BUY")),
         )
 
         trade_system_type = st.selectbox(
@@ -926,10 +872,7 @@ with tab_trades:
             value=float(prefill.get("quantity", 0.0)),
         )
 
-        price = st.number_input(
-            "Kurs",
-            step=0.01,
-        )
+        price = st.number_input("Kurs", step=0.01)
 
         cash_flow = st.number_input(
             "Tatsächlicher Cash Flow laut Broker",
@@ -937,7 +880,6 @@ with tab_trades:
         )
 
         notes = st.text_input("Notizen")
-
         submit_trade = st.form_submit_button("Trade speichern")
 
         if submit_trade:
@@ -969,10 +911,7 @@ with tab_trades:
     st.subheader("Trade Historie")
 
     if not trade_df.empty:
-        st.dataframe(
-            trade_df,
-            use_container_width=True,
-        )
+        st.dataframe(trade_df, use_container_width=True)
     else:
         st.info("Noch keine Trades vorhanden.")
 
@@ -987,10 +926,7 @@ with tab_data:
     st.subheader("Gespeicherte Underlyings")
 
     if not underlyings_df.empty:
-        st.dataframe(
-            underlyings_df,
-            use_container_width=True,
-        )
+        st.dataframe(underlyings_df, use_container_width=True)
     else:
         st.info("Noch keine Underlyings vorhanden.")
 
@@ -1024,10 +960,7 @@ with tab_data:
                         "wkn": row.get("wkn", ""),
                         "exchange": row.get("exchange", ""),
                         "currency": row.get("currency", ""),
-                        "strategy_role": row.get(
-                            "strategy_role",
-                            "CORE",
-                        ),
+                        "strategy_role": row.get("strategy_role", "CORE"),
                     },
                     on_conflict="ticker",
                 ).execute()
@@ -1080,7 +1013,6 @@ with tab_data:
         )
         exchange = st.text_input("Börse")
         currency = st.text_input("Währung")
-
         submit_underlying = st.form_submit_button("Speichern")
 
         if submit_underlying:
@@ -1110,10 +1042,7 @@ with tab_admin:
 
     st.subheader("Full Data Refresh")
 
-    if st.button(
-        "Full Data Refresh ausführen",
-        key="admin_full_refresh",
-    ):
+    if st.button("Full Data Refresh ausführen", key="admin_full_refresh"):
         with st.spinner("Full Data Refresh läuft..."):
             run_daily_update(incremental=False)
 
@@ -1123,10 +1052,7 @@ with tab_admin:
     st.subheader("Rebalance Status")
 
     if not rebalance_df.empty:
-        st.dataframe(
-            rebalance_df,
-            use_container_width=True,
-        )
+        st.dataframe(rebalance_df, use_container_width=True)
     else:
         st.info("Kein Rebalance Status vorhanden.")
 
