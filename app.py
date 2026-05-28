@@ -546,7 +546,7 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
 
     import_df = pd.read_csv(uploaded_file)
-
+    import_df = import_df.fillna("")
     st.write(import_df.head())
 
     if st.button("Stammdaten importieren"):
