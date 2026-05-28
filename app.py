@@ -474,13 +474,16 @@ with tab_data:
 with tab_admin:
     st.header("Admin")
 
-    st.subheader("Daily Update")
+    st.subheader("Full Data Refresh")
 
-    if st.button("Daily Update ausführen"):
-        with st.spinner("Daily Update läuft..."):
+    if st.button(
+       "Full Data Refresh ausführen",
+        key="admin_full_refresh"
+    ):
+        with st.spinner("Full Data Refresh läuft..."):
             run_daily_update()
 
-        st.success("Daily Update erfolgreich abgeschlossen.")
+        st.success("Full Data Refresh erfolgreich abgeschlossen.")
         st.rerun()
 
     st.subheader("Rebalance Status")
