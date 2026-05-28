@@ -580,6 +580,27 @@ if uploaded_file is not None:
         )
 
         st.rerun()
+st.subheader("Automatische Stammdaten-Anreicherung")
+
+if st.button("Stammdaten automatisch laden"):
+
+    tickers = df["ticker"].dropna().tolist()
+
+    with st.spinner(
+        "Lade Stammdaten von Yahoo Finance..."
+    ):
+
+        enrich_underlyings(
+            supabase,
+            tickers
+        )
+
+    st.success(
+        "Stammdaten-Anreicherung abgeschlossen."
+    )
+
+    st.rerun()
+    
     with st.form("add_underlying_form"):
         ticker = st.text_input("Ticker")
         company_name = st.text_input("Unternehmensname")
