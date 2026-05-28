@@ -514,7 +514,10 @@ with tab_admin:
             if pd.notna(next_core) and next_core:
                 next_core_date = pd.to_datetime(next_core).date()
                 core_rebalance_due = today >= next_core_date
-                col1.metric("Nächstes CORE Rebalance", str(next_core_date))
+                col1.metric(
+                    "Nächstes CORE Rebalance",
+                    next_core_date.strftime("%d.%m.%Y")
+                )
             else:
                 col1.metric("Nächstes CORE Rebalance", "Noch nicht gesetzt")
 
@@ -524,7 +527,10 @@ with tab_admin:
             if pd.notna(next_sat) and next_sat:
                 next_sat_date = pd.to_datetime(next_sat).date()
                 sat_rebalance_due = today >= next_sat_date
-                col2.metric("Nächstes SATELLITE Rebalance", str(next_sat_date))
+                col2.metric(
+                    "Nächstes SATELLITE Rebalance",
+                    next_sat_date.strftime("%d.%m.%Y")
+                )
             else:
                 col2.metric("Nächstes SATELLITE Rebalance", "Noch nicht gesetzt")
 
