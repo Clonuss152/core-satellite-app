@@ -960,11 +960,46 @@ with tab_trades:
 
     st.subheader("Trade Historie")
 
-    if not trade_df.empty:
-        st.dataframe(trade_df, use_container_width=True)
-    else:
-        st.info("Noch keine Trades vorhanden.")
+if not trade_df.empty:
 
+    st.dataframe(
+        trade_df,
+        use_container_width=True
+    )
+
+    st.subheader("Trade löschen")
+
+    for idx, row in trade_df.sort_values(
+        "trade_date",
+        ascending=False
+    ).iterrows():
+
+        col1, col2, col3, col4 = st.columns([2, 2, 3, 1])
+
+        col1.write(row.get("trade_date", ""))
+        col2.write(row.get("action", ""))
+        col3.write(
+            f"{row.get('underlying_ticker', '')} | "
+            f"{row.get('quantity', '')} Stück | "
+            f"{row.get('price', '')}"
+        )
+
+        if col4.button(
+            "Löschen",
+            key=f"delete_trade_{row['id']}"
+        ):
+
+            supabase.table("trades").delete().eq(
+                "id",
+                row["id"]
+            ).execute()
+
+            st.success("Trade gelöscht.")
+            st.rerun()
+
+else:
+
+    st.info("Noch keine Trades vorhanden.")
 
 # ===================================================
 # DATEN
