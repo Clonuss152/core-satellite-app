@@ -360,56 +360,55 @@ with tab_dashboard:
 
     st.caption(f"Letztes Update: {last_update}")
 
-with st.expander("Rebalance als ausgeführt speichern"):
+    with st.expander("Rebalance als ausgeführt speichern"):
 
-    with st.form("dashboard_rebalance_execution_form"):
+        with st.form("dashboard_rebalance_execution_form"):
 
-        execution_system = st.selectbox(
-            "Ausgeführtes System",
-            ["CORE", "SATELLITE"]
-        )
-
-        execution_date = st.date_input(
-            "Tatsächliches Ausführungsdatum",
-            value=today,
-            format="DD.MM.YYYY"
-        )
-
-        submit_rebalance_execution = st.form_submit_button(
-            "Speichern"
-        )
-
-        if submit_rebalance_execution:
-
-            cycle_days = (
-                10
-                if execution_system == "CORE"
-                else 21
+            execution_system = st.selectbox(
+                "Ausgeführtes System",
+                ["CORE", "SATELLITE"]
             )
 
-            next_date = add_business_days(
-                execution_date,
-                cycle_days
+            execution_date = st.date_input(
+                "Tatsächliches Ausführungsdatum",
+                value=today,
+                format="DD.MM.YYYY"
             )
 
-            supabase.table("rebalance_state").upsert(
-                {
-                    "system_type": execution_system,
-                    "last_rebalance_date": str(execution_date),
-                    "next_rebalance_date": str(next_date),
-                    "rebalance_cycle_days": cycle_days
-                },
-                on_conflict="system_type"
-            ).execute()
-
-            st.success(
-                f"{execution_system} Rebalance gespeichert."
+            submit_rebalance_execution = st.form_submit_button(
+                "Speichern"
             )
 
-            st.rerun()
+            if submit_rebalance_execution:
 
-st.divider()
+                cycle_days = (
+                    10
+                    if execution_system == "CORE"
+                    else 21
+                )
 
+                next_date = add_business_days(
+                    execution_date,
+                    cycle_days
+                )
+
+                supabase.table("rebalance_state").upsert(
+                    {
+                        "system_type": execution_system,
+                        "last_rebalance_date": str(execution_date),
+                        "next_rebalance_date": str(next_date),
+                        "rebalance_cycle_days": cycle_days
+                    },
+                    on_conflict="system_type"
+                ).execute()
+
+                st.success(
+                    f"{execution_system} Rebalance gespeichert."
+                )
+
+                st.rerun()
+
+    st.divider()
     # -------------------------------------------
     # Orders laden
     # -------------------------------------------
