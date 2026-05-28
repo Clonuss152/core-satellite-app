@@ -474,7 +474,7 @@ st.divider()
     # Aktuelles Portfolio
     # -------------------------------------------
 
-    st.subheader("Aktuelles Portfolio")
+st.subheader("Aktuelles Portfolio")
 
     dashboard_positions = open_positions.copy()
 
