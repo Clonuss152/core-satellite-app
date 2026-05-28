@@ -536,7 +536,50 @@ with tab_data:
         st.rerun()
 
     st.subheader("Neues Underlying hinzufügen")
+st.subheader("Stammdaten CSV Import")
 
+uploaded_file = st.file_uploader(
+    "CSV mit Stammdaten hochladen",
+    type=["csv"]
+)
+
+if uploaded_file is not None:
+
+    import_df = pd.read_csv(uploaded_file)
+
+    st.write(import_df.head())
+
+    if st.button("Stammdaten importieren"):
+
+        imported = 0
+
+        for _, row in import_df.iterrows():
+
+            ticker = str(row.get("ticker", "")).strip()
+
+            if not ticker:
+                continue
+
+            supabase.table("underlyings").upsert(
+                {
+                    "ticker": ticker,
+                    "company_name": row.get("company_name", ""),
+                    "isin": row.get("isin", ""),
+                    "wkn": row.get("wkn", ""),
+                    "exchange": row.get("exchange", ""),
+                    "currency": row.get("currency", ""),
+                    "strategy_role": row.get("strategy_role", "CORE")
+                },
+                on_conflict="ticker"
+            ).execute()
+
+            imported += 1
+
+        st.success(
+            f"{imported} Stammdaten importiert."
+        )
+
+        st.rerun()
     with st.form("add_underlying_form"):
         ticker = st.text_input("Ticker")
         company_name = st.text_input("Unternehmensname")
