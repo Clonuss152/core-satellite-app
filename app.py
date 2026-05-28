@@ -250,6 +250,8 @@ with tab_portfolio:
                     "system_type": row["system_type"],
                     "underlying_ticker": row["underlying_ticker"],
                     "turbo_wkn": row["turbo_wkn"],
+                    "issuer": row.get("issuer", ""),
+                    "turbo_isin": row.get("turbo_isin", ""),
                     "quantity": float(row["OPEN_QTY"])
                 }
 
