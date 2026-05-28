@@ -67,7 +67,24 @@ tab_dashboard, tab_portfolio, tab_trades, tab_data, tab_admin = st.tabs(
 )
 
 with tab_dashboard:
+    st.header("Daily Update")
 
+    if st.button(
+        "Daily Update ausführen",
+        key="dashboard_daily_update"
+    ):
+
+        with st.spinner(
+            "Daily Update läuft..."
+        ):
+
+            run_daily_update()
+
+        st.success(
+            "Daily Update erfolgreich abgeschlossen."
+        )
+
+        st.rerun()
     st.header("Snapshot Dashboard")
 
     st.subheader("System Status")
