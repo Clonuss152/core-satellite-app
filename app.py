@@ -102,6 +102,7 @@ def get_latest_broker_cash():
 underlyings_df = load_table("underlyings")
 trade_df = load_table("trades")
 cash_df = load_table("cash_transactions")
+cash_state_df = load_table("cash_state")
 rebalance_df = load_table("rebalance_state")
 status_df = load_table("system_status")
 
