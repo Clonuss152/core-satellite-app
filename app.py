@@ -359,21 +359,20 @@ with tab_dashboard:
         st.metric("SAT Rebalance", next_sat_display)
 
     st.caption(f"Letztes Update: {last_update}")
-    with st.expander("Rebalance als ausgeführt speichern"):
+
+with st.expander("Rebalance als ausgeführt speichern"):
 
     with st.form("dashboard_rebalance_execution_form"):
 
         execution_system = st.selectbox(
             "Ausgeführtes System",
-            ["CORE", "SATELLITE"],
-            key="dashboard_execution_system"
+            ["CORE", "SATELLITE"]
         )
 
         execution_date = st.date_input(
             "Tatsächliches Ausführungsdatum",
             value=today,
-            format="DD.MM.YYYY",
-            key="dashboard_execution_date"
+            format="DD.MM.YYYY"
         )
 
         submit_rebalance_execution = st.form_submit_button(
@@ -404,12 +403,12 @@ with tab_dashboard:
             ).execute()
 
             st.success(
-                f"{execution_system} Rebalance gespeichert. "
-                f"Nächstes Rebalance: {next_date.strftime('%d.%m.%Y')}"
+                f"{execution_system} Rebalance gespeichert."
             )
 
-            st.rerun()    
-    st.divider()
+            st.rerun()
+
+st.divider()
 
     # -------------------------------------------
     # Orders laden
