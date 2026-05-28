@@ -78,7 +78,9 @@ with tab_dashboard:
             "Daily Update läuft..."
         ):
 
-            run_daily_update()
+            run_daily_update(
+                incremental=True
+            )
 
         st.success(
             "Daily Update erfolgreich abgeschlossen."
