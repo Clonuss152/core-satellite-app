@@ -1,23 +1,24 @@
 import pandas as pd
 
 
-def get_latest_broker_cash(cash_df):
+def get_latest_broker_cash(cash_state_df):
 
-    if cash_df.empty:
+    if cash_state_df.empty:
         return 0.0
 
-    if "broker_cash_after" not in cash_df.columns:
-        return 0.0
+    cash_state_df = cash_state_df.copy()
 
-    cash_df = cash_df.copy()
+    cash_state_df["snapshot_date"] = pd.to_datetime(
+        cash_state_df["snapshot_date"]
+    )
 
-    if "transaction_date" in cash_df.columns:
-        cash_df["transaction_date"] = pd.to_datetime(
-            cash_df["transaction_date"]
-        )
-        cash_df = cash_df.sort_values("transaction_date")
+    cash_state_df = cash_state_df.sort_values(
+        "snapshot_date"
+    )
 
-    latest_cash = cash_df.iloc[-1]["broker_cash_after"]
+    latest_cash = cash_state_df.iloc[-1][
+        "broker_cash"
+    ]
 
     if pd.isna(latest_cash):
         return 0.0
