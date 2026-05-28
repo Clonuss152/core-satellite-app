@@ -541,7 +541,7 @@ with tab_admin:
 
     with st.form("rebalance_execution_form"):
         execution_system = st.selectbox("Ausgeführtes System", ["CORE", "SATELLITE"])
-        execution_date = st.date_input("Tatsächliches Ausführungsdatum", value=today)
+        execution_date = st.date_input("Tatsächliches Ausführungsdatum", value=today, format="DD.MM.YYYY")
         submit_rebalance_execution = st.form_submit_button("Speichern")
 
         if submit_rebalance_execution:
