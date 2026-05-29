@@ -249,6 +249,36 @@ def calculate_trade_statistics(trade_df):
         "total_cashflow_adjustment": float(
             df["cashflow_adjustment"].sum()
         ),
+                "profit_factor": profit_factor,
+        "largest_winner": largest_winner,
+        "largest_loser": largest_loser,
+
+        "core_win_rate": core_win_rate,
+        "sat_win_rate": sat_win_rate,
+
+        "core_average_win": (
+            float(core_winners["RESULT"].mean())
+            if not core_winners.empty
+            else 0.0
+        ),
+
+        "core_average_loss": (
+            float(core_losers["RESULT"].mean())
+            if not core_losers.empty
+            else 0.0
+        ),
+
+        "sat_average_win": (
+            float(sat_winners["RESULT"].mean())
+            if not sat_winners.empty
+            else 0.0
+        ),
+
+        "sat_average_loss": (
+            float(sat_losers["RESULT"].mean())
+            if not sat_losers.empty
+            else 0.0
+        ),
     }
 
     return result, closed_positions
