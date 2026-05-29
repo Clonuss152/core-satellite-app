@@ -1139,12 +1139,23 @@ with tab_trades:
 
             col1.write(row.get("trade_date", ""))
             col2.write(row.get("action", ""))
-            col3.write(
-                f"{row.get('underlying_ticker', '')} | "
-                f"{row.get('quantity', '')} Stück | "
-                f"{row.get('price', '')}"
-            )
+            company_name = row.get("company_name", "")
 
+            if pd.notna(company_name) and company_name:
+                label = (
+                    f"{row.get('underlying_ticker', '')} "
+                    f"({company_name}) | "
+                    f"{row.get('quantity', '')} Stück | "
+                    f"{row.get('price', '')}"
+                )
+            else:
+                label = (
+                    f"{row.get('underlying_ticker', '')} | "
+                    f"{row.get('quantity', '')} Stück | "
+                    f"{row.get('price', '')}"
+                )
+
+            col3.write(label)
             if col4.button(
                 "Edit",
                 key=f"edit_trade_{row['id']}"
