@@ -1470,77 +1470,85 @@ with tab_stats:
 
     st.markdown("### Überblick")
 
-    overview1, overview2, overview3, overview4 = st.columns(4)
+    k1, k2, k3, k4 = st.columns(4)
 
-    overview1.metric(
-        "Abgeschlossene Trades",
-        stats["total_trades"],
-    )
+    with k1:
+        metric_card(
+            "Abgeschlossene Trades",
+            stats["total_trades"],
+        )
 
-    overview2.metric(
-        "Gewinnquote",
-        f"{stats['win_rate']:.1%}",
-    )
+    with k2:
+        metric_card(
+            "Gewinnquote",
+            f"{stats['win_rate']:.1%}",
+        )
 
-    overview3.metric(
-        "Nettoergebnis",
-        format_eur(stats["net_result"]),
-    )
+    with k3:
+        metric_card(
+            "Nettoergebnis",
+            format_eur(stats["net_result"]),
+        )
 
-    overview4.metric(
-        "Profit Factor",
-        f"{stats['profit_factor']:.2f}",
-    )
-
-    st.divider()
+    with k4:
+        metric_card(
+            "Profit Factor",
+            f"{stats['profit_factor']:.2f}",
+        )
 
     st.markdown("### Gewinn / Verlust")
 
-    pnl1, pnl2, pnl3, pnl4 = st.columns(4)
+    g1, g2, g3, g4 = st.columns(4)
 
-    pnl1.metric(
-        "Gewinntrades",
-        stats["winning_trades"],
-    )
+    with g1:
+        metric_card(
+            "Gewinntrades",
+            stats["winning_trades"],
+        )
 
-    pnl2.metric(
-        "Verlusttrades",
-        stats["losing_trades"],
-    )
+    with g2:
+        metric_card(
+            "Verlusttrades",
+            stats["losing_trades"],
+        )
 
-    pnl3.metric(
-        "Gesamtgewinn",
-        format_eur(stats["total_profit"]),
-    )
+    with g3:
+        metric_card(
+            "Gesamtgewinn",
+            format_eur(stats["total_profit"]),
+        )
 
-    pnl4.metric(
-        "Gesamtverlust",
-        format_eur(stats["total_loss"]),
-    )
+    with g4:
+        metric_card(
+            "Gesamtverlust",
+            format_eur(stats["total_loss"]),
+        )
 
-    pnl5, pnl6, pnl7, pnl8 = st.columns(4)
+    g5, g6, g7, g8 = st.columns(4)
 
-    pnl5.metric(
-        "Ø Gewinntrade",
-        format_eur(stats["average_win"]),
-    )
+    with g5:
+        metric_card(
+            "Ø Gewinntrade",
+            format_eur(stats["average_win"]),
+        )
 
-    pnl6.metric(
-        "Ø Verlusttrade",
-        format_eur(stats["average_loss"]),
-    )
+    with g6:
+        metric_card(
+            "Ø Verlusttrade",
+            format_eur(stats["average_loss"]),
+        )
 
-    pnl7.metric(
-        "Größter Gewinner",
-        format_eur(stats["largest_winner"]),
-    )
+    with g7:
+        metric_card(
+            "Größter Gewinner",
+            format_eur(stats["largest_winner"]),
+        )
 
-    pnl8.metric(
-        "Größter Verlierer",
-        format_eur(stats["largest_loser"]),
-    )
-
-    st.divider()
+    with g8:
+        metric_card(
+            "Größter Verlierer",
+            format_eur(stats["largest_loser"]),
+        )
 
     st.markdown("### CORE vs SATELLITE")
 
@@ -1551,111 +1559,100 @@ with tab_stats:
 
         c1, c2, c3 = st.columns(3)
 
-        c1.metric(
-            "Trades",
-            stats["core_trades"],
-        )
+        with c1:
+            metric_card(
+                "Trades",
+                stats["core_trades"],
+            )
 
-        c2.metric(
-            "Gewinnquote",
-            f"{stats['core_win_rate']:.1%}",
-        )
+        with c2:
+            metric_card(
+                "Gewinnquote",
+                f"{stats['core_win_rate']:.1%}",
+            )
 
-        c3.metric(
-            "Netto",
-            format_eur(stats["core_net_result"]),
-        )
+        with c3:
+            metric_card(
+                "Netto",
+                format_eur(stats["core_net_result"]),
+            )
 
-        c4, c5, c6, c7 = st.columns(4)
+        c4, c5 = st.columns(2)
 
-        c4.metric(
-            "Gewinner",
-            stats["core_winning_trades"],
-        )
+        with c4:
+            metric_card(
+                "Ø Gewinn",
+                format_eur(stats["core_average_win"]),
+            )
 
-        c5.metric(
-            "Verlierer",
-            stats["core_losing_trades"],
-        )
-
-        c6.metric(
-            "Ø Gewinn",
-            format_eur(stats["core_average_win"]),
-        )
-
-        c7.metric(
-            "Ø Verlust",
-            format_eur(stats["core_average_loss"]),
-        )
+        with c5:
+            metric_card(
+                "Ø Verlust",
+                format_eur(stats["core_average_loss"]),
+            )
 
     with sat_box:
         st.markdown("#### SATELLITE")
 
         s1, s2, s3 = st.columns(3)
 
-        s1.metric(
-            "Trades",
-            stats["sat_trades"],
-        )
+        with s1:
+            metric_card(
+                "Trades",
+                stats["sat_trades"],
+            )
 
-        s2.metric(
-            "Gewinnquote",
-            f"{stats['sat_win_rate']:.1%}",
-        )
+        with s2:
+            metric_card(
+                "Gewinnquote",
+                f"{stats['sat_win_rate']:.1%}",
+            )
 
-        s3.metric(
-            "Netto",
-            format_eur(stats["sat_net_result"]),
-        )
+        with s3:
+            metric_card(
+                "Netto",
+                format_eur(stats["sat_net_result"]),
+            )
 
-        s4, s5, s6, s7 = st.columns(4)
+        s4, s5 = st.columns(2)
 
-        s4.metric(
-            "Gewinner",
-            stats["sat_winning_trades"],
-        )
+        with s4:
+            metric_card(
+                "Ø Gewinn",
+                format_eur(stats["sat_average_win"]),
+            )
 
-        s5.metric(
-            "Verlierer",
-            stats["sat_losing_trades"],
-        )
-
-        s6.metric(
-            "Ø Gewinn",
-            format_eur(stats["sat_average_win"]),
-        )
-
-        s7.metric(
-            "Ø Verlust",
-            format_eur(stats["sat_average_loss"]),
-        )
-
-    st.divider()
+        with s5:
+            metric_card(
+                "Ø Verlust",
+                format_eur(stats["sat_average_loss"]),
+            )
 
     st.markdown("### Kosten / Steuern / Differenzen")
 
     cost1, cost2, cost3 = st.columns(3)
 
-    cost1.metric(
-        "Gebühren",
-        format_eur(stats["total_fees"]),
-    )
+    with cost1:
+        metric_card(
+            "Gebühren",
+            format_eur(stats["total_fees"]),
+        )
 
-    cost2.metric(
-        "Steuern",
-        format_eur(stats["total_taxes"]),
-    )
+    with cost2:
+        metric_card(
+            "Steuern",
+            format_eur(stats["total_taxes"]),
+        )
 
-    cost3.metric(
-        "Unerklärte Restdifferenz",
-        format_eur(stats["total_cashflow_adjustment"]),
-    )
+    with cost3:
+        metric_card(
+            "Unerklärte Restdifferenz",
+            format_eur(stats["total_cashflow_adjustment"]),
+        )
 
     st.caption(
         "Cashflow Adjustment ist nur die nicht erklärte Differenz nach Bruttobetrag, Gebühren und Steuern."
     )
-
-    st.divider()
 
     st.markdown("### Geschlossene Positionen")
 
@@ -1703,7 +1700,6 @@ with tab_stats:
         st.info(
             "Noch keine vollständig geschlossenen Positionen vorhanden."
         )
-
 # ===================================================
 # DATEN
 # ===================================================
