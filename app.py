@@ -1854,11 +1854,15 @@ with tab_stats:
             "underlying_ticker",
             "company_name",
             "turbo_wkn",
+            "BUY_DATE",
+            "SELL_DATE",
+            "HOLD_DAYS",
             "BUY_QTY",
             "SELL_QTY",
             "BUY_CASH",
             "SELL_CASH",
             "RESULT",
+            "RESULT_PCT",
         ]
 
         display_cols = [
