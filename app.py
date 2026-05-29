@@ -567,7 +567,7 @@ with tab_dashboard:
             st.success("Broker Cash gespeichert.")
             st.rerun()
 
-    cash1, cash2, cash3, cash4 = st.columns(4)
+    cash1, cash2, cash3, cash4, cash5 = st.columns(5)
 
     cash1.metric(
         "Broker Cash",
@@ -580,15 +580,19 @@ with tab_dashboard:
     )
 
     cash3.metric(
-        "SAT Reserve",
-        format_eur(capital_metrics.get("satellite_reserve", 0.0)),
+        "SAT Zielkapital",
+        format_eur(capital_metrics.get("satellite_target_capital", 0.0)),
     )
 
     cash4.metric(
+        "SAT offen",
+        format_eur(capital_metrics.get("satellite_open_cost", 0.0)),
+    )
+
+    cash5.metric(
         "CORE verfügbar",
         format_eur(capital_metrics.get("core_available_cash", 0.0)),
     )
-
     st.caption(
         "Logik: HOLD bleibt liegen. Systemkapital = Broker Cash + Einstandswerte offener Positionen. "
         "Satellite ist auf 5 % Systemkapital begrenzt, sofern keine SAT-Position offen ist."
