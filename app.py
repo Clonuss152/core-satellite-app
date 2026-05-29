@@ -1116,6 +1116,8 @@ with tab_trades:
                         quantity,
                         price,
                         cash_flow,
+                        fees,
+                        taxes,
                     ),
                     "notes": notes,
                 }
