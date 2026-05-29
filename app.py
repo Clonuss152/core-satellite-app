@@ -1106,8 +1106,28 @@ with tab_trades:
                 columns=["ticker"]
             )
         
+        display_cols = [
+            "trade_date",
+            "system_type",
+            "action",
+            "underlying_ticker",
+            "company_name",
+            "quantity",
+            "price",
+            "gross_amount",
+            "fees",
+            "taxes",
+            "net_cash_effect",
+            "cashflow_adjustment",
+        ]
+
+        display_cols = [
+            col for col in display_cols
+            if col in trade_history_df.columns
+        ]
+
         st.dataframe(
-            trade_history_df,
+            trade_history_df[display_cols],
             use_container_width=True
         )
 
