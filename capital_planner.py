@@ -188,13 +188,17 @@ def calculate_capital_plan(
                 sat_orders["action"] == "BUY",
                 "suggested_amount"
             ] = satellite_reserve
-
+    satellite_gap = (
+        satellite_open_cost
+        - satellite_target_capital
+    )
     metrics = {
         "broker_cash": broker_cash,
         "system_capital": system_capital,
         "satellite_target_capital": satellite_target_capital,
         "satellite_limit": satellite_target_capital,
         "satellite_open_cost": satellite_open_cost,
+        "satellite_gap": satellite_gap,
         "satellite_reserve": satellite_reserve,
         "core_available_cash": core_available_cash,
         "satellite_is_open": satellite_is_open,
