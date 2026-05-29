@@ -1968,8 +1968,9 @@ with tab_stats:
                 formatted_closed_view["RESULT_PCT"]
             )
         
-        st.dataframe(
-            formatted_closed_view.style.map(
+        styled_view = (
+            formatted_closed_view.style
+            .map(
                 lambda v: (
                     "color: green; font-weight: bold"
                     if isinstance(v, (int, float))
@@ -1981,7 +1982,12 @@ with tab_stats:
                         else ""
                     )
                 ),
-                subset=["RESULT"],
+                subset=["RESULT", "RESULT_PCT"],
+            )
+            .format(
+                {
+                    "RESULT_PCT": "{:.2%}",
+                }
             )
         )
 
