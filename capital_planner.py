@@ -1,6 +1,9 @@
 import pandas as pd
 
 
+SAT_TARGET_WEIGHT = 0.05
+
+
 def get_latest_broker_cash(cash_state_df):
 
     if cash_state_df.empty:
@@ -116,18 +119,25 @@ def calculate_capital_plan(
             ].sum()
         )
 
+    # Realisiertes operatives Systemkapital:
+    # Broker Cash + Einstandswerte offener Positionen.
+    # Unrealized Gewinne werden bewusst nicht berücksichtigt.
     system_capital = broker_cash + total_open_cost
 
-    satellite_limit = system_capital * 0.05
+    # SAT-Zielkapital entspricht immer 5 % des realisierten Systemkapitals.
+    satellite_target_capital = system_capital * SAT_TARGET_WEIGHT
 
     satellite_is_open = satellite_open_cost > 0
 
+    # Wenn eine SAT-Position offen ist, wird kein zusätzlicher SAT-Cash reserviert.
+    # Wenn keine SAT-Position offen ist, wird beim nächsten SAT-Kauf bis zu 5 %
+    # des Systemkapitals investiert, maximal jedoch verfügbarer Broker Cash.
     if satellite_is_open:
         satellite_reserve = 0.0
     else:
         satellite_reserve = min(
             broker_cash,
-            satellite_limit
+            satellite_target_capital
         )
 
     core_available_cash = max(
@@ -182,10 +192,12 @@ def calculate_capital_plan(
     metrics = {
         "broker_cash": broker_cash,
         "system_capital": system_capital,
-        "satellite_limit": satellite_limit,
+        "satellite_target_capital": satellite_target_capital,
+        "satellite_limit": satellite_target_capital,
         "satellite_open_cost": satellite_open_cost,
         "satellite_reserve": satellite_reserve,
         "core_available_cash": core_available_cash,
+        "satellite_is_open": satellite_is_open,
     }
 
     return metrics, core_orders, sat_orders
