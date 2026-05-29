@@ -1226,6 +1226,12 @@ with tab_trades:
         submit_trade = st.form_submit_button("Trade speichern")
 
         if submit_trade:
+            snapshot_date = None
+            rank_position = None
+            momentum_score = None
+            signal_reason = None
+            target_leverage = None
+            
             supabase.table("trades").insert(
                 {
                     "trade_date": str(trade_date),
