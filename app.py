@@ -1960,6 +1960,12 @@ with tab_stats:
                 formatted_closed_view["RESULT_PCT"] * 100
             ).round(2)
 
+            formatted_closed_view["RESULT_PCT"] = (
+                formatted_closed_view["RESULT_PCT"]
+                .astype(str)
+                + " %"
+            )
+        
         st.dataframe(
             formatted_closed_view,
             use_container_width=True,
