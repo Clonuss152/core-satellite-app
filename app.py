@@ -1786,7 +1786,10 @@ with tab_stats:
                     else "neutral"
                 ),
             )
-
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True,
+        )
     st.markdown("### Kosten / Steuern / Differenzen")
 
     cost1, cost2, cost3 = st.columns(3)
