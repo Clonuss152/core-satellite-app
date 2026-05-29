@@ -705,7 +705,12 @@ with tab_dashboard:
 
     st.subheader("Aktive Orders")
 
-    st.markdown("### CORE Orders")
+    if core_rebalance_due:
+        st.markdown("### CORE Orders ✅ Heute handelbar")
+    else:
+        st.markdown(
+            f"### CORE Orders ⏳ Nicht handelbar bis {next_core_display}"
+        )
 
     if not planned_core_orders.empty:
         for idx, row in planned_core_orders.iterrows():
@@ -731,7 +736,12 @@ with tab_dashboard:
     else:
         st.info("Keine aktiven CORE Orders.")
 
-    st.markdown("### SATELLITE Orders")
+    if sat_rebalance_due:
+        st.markdown("### SATELLITE Orders ✅ Heute handelbar")
+    else:
+        st.markdown(
+            f"### SATELLITE Orders ⏳ Nicht handelbar bis {next_sat_display}"
+        )
 
     if not planned_sat_orders.empty:
         for idx, row in planned_sat_orders.iterrows():
