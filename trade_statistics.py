@@ -109,6 +109,18 @@ def calculate_trade_statistics(trade_df):
                     x["action"] == "SELL",
                     "net_cash_effect",
                 ].abs().sum(),
+                "BUY_DATE": pd.to_datetime(
+                    x.loc[
+                        x["action"] == "BUY",
+                        "trade_date",
+                    ]
+                ).min(),
+                "SELL_DATE": pd.to_datetime(
+                    x.loc[
+                        x["action"] == "SELL",
+                        "trade_date",
+                    ]
+                ).max(),
             }
         )
     ).reset_index()
@@ -135,7 +147,20 @@ def calculate_trade_statistics(trade_df):
         closed_positions["SELL_CASH"]
         - closed_positions["BUY_CASH"]
     )
+    closed_positions["RESULT_PCT"] = 0.0
 
+    closed_positions.loc[
+        closed_positions["BUY_CASH"] > 0,
+        "RESULT_PCT",
+    ] = (
+        closed_positions["RESULT"]
+        / closed_positions["BUY_CASH"]
+    )
+
+    closed_positions["HOLD_DAYS"] = (
+        pd.to_datetime(closed_positions["SELL_DATE"])
+        - pd.to_datetime(closed_positions["BUY_DATE"])
+    ).dt.days
     winners = closed_positions[
         closed_positions["RESULT"] > 0
     ]
