@@ -1092,6 +1092,20 @@ with tab_trades:
             ascending=False
         ).copy()
 
+        trade_history_df = trade_history_df.merge(
+            underlyings_df[
+                ["ticker", "company_name"]
+            ],
+            left_on="underlying_ticker",
+            right_on="ticker",
+            how="left",
+        )
+
+        if "ticker" in trade_history_df.columns:
+            trade_history_df = trade_history_df.drop(
+                columns=["ticker"]
+            )
+        
         st.dataframe(
             trade_history_df,
             use_container_width=True
