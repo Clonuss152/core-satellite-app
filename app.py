@@ -1482,7 +1482,28 @@ with tab_stats:
             else 0.0
         ),
     )
+    st.subheader("Erweiterte Kennzahlen")
 
+    ext1, ext2, ext3 = st.columns(3)
+
+    ext1.metric(
+        "Profit Factor",
+        f"{stats['profit_factor']:.2f}",
+    )
+
+    ext2.metric(
+        "Größter Gewinner",
+        format_eur(
+            stats["largest_winner"]
+        ),
+    )
+
+    ext3.metric(
+        "Größter Verlierer",
+        format_eur(
+            stats["largest_loser"]
+        ),
+    )    
     st.subheader("Durchschnittswerte")
 
     avg1, avg2 = st.columns(2)
