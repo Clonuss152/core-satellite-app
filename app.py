@@ -1563,7 +1563,53 @@ with tab_stats:
         "SAT Netto",
         format_eur(stats["sat_net_result"]),
     )
+    st.subheader(
+        "CORE / SAT Details"
+    )
 
+    detail1, detail2 = st.columns(2)
+
+    with detail1:
+
+        st.metric(
+            "CORE Gewinnquote",
+            f"{stats['core_win_rate']:.1%}",
+        )
+
+        st.metric(
+            "Ø Gewinn CORE",
+            format_eur(
+                stats["core_average_win"]
+            ),
+        )
+
+        st.metric(
+            "Ø Verlust CORE",
+            format_eur(
+                stats["core_average_loss"]
+            ),
+        )
+
+    with detail2:
+
+        st.metric(
+            "SAT Gewinnquote",
+            f"{stats['sat_win_rate']:.1%}",
+        )
+
+        st.metric(
+            "Ø Gewinn SAT",
+            format_eur(
+                stats["sat_average_win"]
+            ),
+        )
+
+        st.metric(
+            "Ø Verlust SAT",
+            format_eur(
+                stats["sat_average_loss"]
+            ),
+        )
     st.subheader("Kosten / Steuern / Differenzen")
 
     cost1, cost2, cost3 = st.columns(3)
