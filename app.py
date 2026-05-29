@@ -1383,6 +1383,194 @@ with tab_trades:
     else:
 
         st.info("Noch keine Trades vorhanden.")
+
+# ===================================================
+# STATISTIK
+# ===================================================
+
+with tab_stats:
+    st.header("Statistik")
+
+    stats, closed_positions = calculate_trade_statistics(
+        trade_df
+    )
+
+    st.subheader("Abgeschlossene Trades")
+
+    stat1, stat2, stat3, stat4 = st.columns(4)
+
+    stat1.metric(
+        "Abgeschlossene Trades",
+        stats["total_trades"],
+    )
+
+    stat2.metric(
+        "Gewinntrades",
+        stats["winning_trades"],
+    )
+
+    stat3.metric(
+        "Verlusttrades",
+        stats["losing_trades"],
+    )
+
+    stat4.metric(
+        "Gewinnquote",
+        f"{stats['win_rate']:.1%}",
+    )
+
+    st.subheader("Ergebnis Gesamt")
+
+    perf1, perf2, perf3, perf4 = st.columns(4)
+
+    perf1.metric(
+        "Nettoergebnis",
+        format_eur(stats["net_result"]),
+    )
+
+    perf2.metric(
+        "Gesamtgewinn",
+        format_eur(stats["total_profit"]),
+    )
+
+    perf3.metric(
+        "Gesamtverlust",
+        format_eur(stats["total_loss"]),
+    )
+
+    perf4.metric(
+        "Ø Ergebnis pro Trade",
+        format_eur(
+            stats["net_result"] / stats["total_trades"]
+            if stats["total_trades"] > 0
+            else 0.0
+        ),
+    )
+
+    st.subheader("Durchschnittswerte")
+
+    avg1, avg2 = st.columns(2)
+
+    avg1.metric(
+        "Ø Gewinntrade",
+        format_eur(stats["average_win"]),
+    )
+
+    avg2.metric(
+        "Ø Verlusttrade",
+        format_eur(stats["average_loss"]),
+    )
+
+    st.subheader("CORE vs SATELLITE")
+
+    core1, core2, core3, core4 = st.columns(4)
+
+    core1.metric(
+        "CORE Trades",
+        stats["core_trades"],
+    )
+
+    core2.metric(
+        "CORE Gewinntrades",
+        stats["core_winning_trades"],
+    )
+
+    core3.metric(
+        "CORE Verlusttrades",
+        stats["core_losing_trades"],
+    )
+
+    core4.metric(
+        "CORE Netto",
+        format_eur(stats["core_net_result"]),
+    )
+
+    sat1, sat2, sat3, sat4 = st.columns(4)
+
+    sat1.metric(
+        "SAT Trades",
+        stats["sat_trades"],
+    )
+
+    sat2.metric(
+        "SAT Gewinntrades",
+        stats["sat_winning_trades"],
+    )
+
+    sat3.metric(
+        "SAT Verlusttrades",
+        stats["sat_losing_trades"],
+    )
+
+    sat4.metric(
+        "SAT Netto",
+        format_eur(stats["sat_net_result"]),
+    )
+
+    st.subheader("Kosten / Steuern / Differenzen")
+
+    cost1, cost2, cost3 = st.columns(3)
+
+    cost1.metric(
+        "Gebühren",
+        format_eur(stats["total_fees"]),
+    )
+
+    cost2.metric(
+        "Steuern",
+        format_eur(stats["total_taxes"]),
+    )
+
+    cost3.metric(
+        "Cashflow Adjustment",
+        format_eur(stats["total_cashflow_adjustment"]),
+    )
+
+    st.subheader("Geschlossene Positionen")
+
+    if not closed_positions.empty:
+
+        closed_view = closed_positions.copy()
+
+        closed_view = closed_view.merge(
+            underlyings_df[
+                ["ticker", "company_name"]
+            ],
+            left_on="underlying_ticker",
+            right_on="ticker",
+            how="left",
+        )
+
+        if "ticker" in closed_view.columns:
+            closed_view = closed_view.drop(
+                columns=["ticker"]
+            )
+
+        display_cols = [
+            "system_type",
+            "underlying_ticker",
+            "company_name",
+            "turbo_wkn",
+            "BUY_QTY",
+            "SELL_QTY",
+            "BUY_CASH",
+            "SELL_CASH",
+            "RESULT",
+        ]
+
+        display_cols = [
+            col for col in display_cols
+            if col in closed_view.columns
+        ]
+
+        st.dataframe(
+            closed_view[display_cols],
+            use_container_width=True,
+        )
+
+    else:
+        st.info("Noch keine vollständig geschlossenen Positionen vorhanden.")
+
 # ===================================================
 # DATEN
 # ===================================================
