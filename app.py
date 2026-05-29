@@ -724,6 +724,7 @@ with tab_dashboard:
             if col4.button(
                 f"{row['action']}",
                 key=f"core_order_{idx}",
+                disabled=not core_rebalance_due,
             ):
                 prepare_trade_from_order(row, "CORE")
                 st.success("Trade vorbereitet. Bitte in den Trades-Tab wechseln.")
@@ -749,6 +750,7 @@ with tab_dashboard:
             if col4.button(
                 f"{row['action']}",
                 key=f"sat_order_{idx}",
+                disabled=not sat_rebalance_due,
             ):
                 prepare_trade_from_order(row, "SATELLITE")
                 st.success("Trade vorbereitet. Bitte in den Trades-Tab wechseln.")
