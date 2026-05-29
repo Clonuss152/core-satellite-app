@@ -171,7 +171,49 @@ def calculate_trade_statistics(trade_df):
     total_trades = len(closed_positions)
     winning_trades = len(winners)
     losing_trades = len(losers)
+    gross_profit = float(
+        winners["RESULT"].sum()
+    )
 
+    gross_loss = abs(
+        float(
+            losers["RESULT"].sum()
+        )
+    )
+
+    profit_factor = (
+        gross_profit / gross_loss
+        if gross_loss > 0
+        else 0.0
+    )
+
+    largest_winner = (
+        float(
+            winners["RESULT"].max()
+        )
+        if not winners.empty
+        else 0.0
+    )
+
+    largest_loser = (
+        float(
+            losers["RESULT"].min()
+        )
+        if not losers.empty
+        else 0.0
+    )
+
+    core_win_rate = (
+        len(core_winners) / len(core_closed)
+        if len(core_closed) > 0
+        else 0.0
+    )
+
+    sat_win_rate = (
+        len(sat_winners) / len(sat_closed)
+        if len(sat_closed) > 0
+        else 0.0
+    )
     result = {
         "total_trades": total_trades,
         "winning_trades": winning_trades,
