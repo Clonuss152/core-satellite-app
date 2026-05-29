@@ -425,58 +425,85 @@ with tab_dashboard:
     active_sat_orders = pd.DataFrame()
 
     if not core_orders_snapshot.empty:
-        active_core_orders = core_orders_snapshot[
-            core_orders_snapshot["action"] != "HOLD"
-        ].copy()
-        if not open_positions.empty:
 
-            existing_core_positions = set(
-                open_positions[
-                    open_positions["system_type"] == "CORE"
-                ]["underlying_ticker"]
+    active_core_orders = core_orders_snapshot[
+        core_orders_snapshot["action"] != "HOLD"
+    ].copy()
+
+    if not open_positions.empty:
+
+        existing_core_positions = set(
+            open_positions[
+                open_positions["system_type"] == "CORE"
+            ]["underlying_ticker"]
+        )
+
+        # BUY ausblenden wenn Position bereits existiert
+        active_core_orders = active_core_orders[
+            ~(
+                (active_core_orders["action"] == "BUY")
+                &
+                (
+                    active_core_orders["ticker"].isin(
+                        existing_core_positions
+                    )
+                )
             )
+        ]
 
-            active_core_orders = active_core_orders[
-                ~(
-                    (active_core_orders["action"] == "BUY")
-                    &
-                    (
-                        active_core_orders["ticker"].isin(
-                            existing_core_positions
-                        )
+        # SELL ausblenden wenn Position NICHT existiert
+        active_core_orders = active_core_orders[
+            ~(
+                (active_core_orders["action"] == "SELL")
+                &
+                (
+                    ~active_core_orders["ticker"].isin(
+                        existing_core_positions
                     )
                 )
-            ]
+            )
+        ]
 
-    if not sat_orders_snapshot.empty:
-        active_sat_orders = sat_orders_snapshot[
-            sat_orders_snapshot["action"] != "HOLD"
-        ].copy()
-        if not sat_orders_snapshot.empty:
 
-            active_sat_orders = sat_orders_snapshot[
-                sat_orders_snapshot["action"] != "HOLD"
-            ].copy()
+if not sat_orders_snapshot.empty:
 
-            if not open_positions.empty:
+    active_sat_orders = sat_orders_snapshot[
+        sat_orders_snapshot["action"] != "HOLD"
+    ].copy()
 
-                existing_sat_positions = set(
-                    open_positions[
-                        open_positions["system_type"] == "SATELLITE"
-                    ]["underlying_ticker"]
-                )
+    if not open_positions.empty:
 
-                active_sat_orders = active_sat_orders[
-                    ~(
-                        (active_sat_orders["action"] == "BUY")
-                        &
-                        (
-                            active_sat_orders["ticker"].isin(
-                                existing_sat_positions
-                            )
-                        )
+        existing_sat_positions = set(
+            open_positions[
+                open_positions["system_type"] == "SATELLITE"
+            ]["underlying_ticker"]
+        )
+
+        # BUY ausblenden wenn Position bereits existiert
+        active_sat_orders = active_sat_orders[
+            ~(
+                (active_sat_orders["action"] == "BUY")
+                &
+                (
+                    active_sat_orders["ticker"].isin(
+                        existing_sat_positions
                     )
-                ]
+                )
+            )
+        ]
+
+        # SELL ausblenden wenn Position NICHT existiert
+        active_sat_orders = active_sat_orders[
+            ~(
+                (active_sat_orders["action"] == "SELL")
+                &
+                (
+                    ~active_sat_orders["ticker"].isin(
+                        existing_sat_positions
+                    )
+                )
+            )
+        ]
     capital_metrics, planned_core_orders, planned_sat_orders = calculate_capital_plan(
         trade_df=trade_df,
         cash_state_df=cash_state_df,
