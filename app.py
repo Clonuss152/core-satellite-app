@@ -95,7 +95,65 @@ def metric_card(title, value, subtitle="", status="neutral"):
     """
 
     st.markdown(html, unsafe_allow_html=True)
-    
+
+
+st.markdown(
+    """
+    <style>
+    .metric-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 14px;
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        margin-bottom: 10px;
+        min-height: 90px;
+    }
+
+    .metric-title {
+        font-size: 0.80rem;
+        color: #6b7280;
+        margin-bottom: 8px;
+    }
+
+    .metric-value {
+        font-size: 1.45rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .metric-subtitle {
+        font-size: 0.75rem;
+        color: #9ca3af;
+        margin-top: 4px;
+    }
+
+    .section-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 16px;
+        background-color: #ffffff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        margin-bottom: 14px;
+    }
+
+    .section-title-core {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #1d4ed8;
+        margin-bottom: 12px;
+    }
+
+    .section-title-sat {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #c2410c;
+        margin-bottom: 12px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)    
 def status_from_value(value):
 
     try:
