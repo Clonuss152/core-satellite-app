@@ -367,7 +367,19 @@ with tab_dashboard:
         st.metric("SAT Rebalance", next_sat_display)
 
     st.caption(f"Letztes Update: {last_update}")
+    due1, due2 = st.columns(2)
 
+    with due1:
+        if core_rebalance_due:
+            st.success("CORE heute fällig / handelbar")
+        else:
+            st.info("CORE heute nicht fällig")
+
+    with due2:
+        if sat_rebalance_due:
+            st.success("SATELLITE heute fällig / handelbar")
+        else:
+            st.info("SATELLITE heute nicht fällig")
     with st.expander("Rebalance als ausgeführt speichern"):
 
         with st.form("dashboard_rebalance_execution_form"):
