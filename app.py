@@ -1832,5 +1832,58 @@ with tab_admin:
                 f"{execution_system} Rebalance gespeichert. "
                 f"Nächstes Rebalance: {next_date.strftime('%d.%m.%Y')}"
             )
+    st.subheader(
+        "Datenpflege"
+    )
+
+    if st.button(
+        "Cashflow Adjustments neu berechnen"
+    ):
+
+        all_trades = load_trades()
+
+        updated_count = 0
+
+        for _, trade in all_trades.iterrows():
+
+            adjustment = (
+                calculate_cashflow_adjustment(
+                    trade.get("action"),
+                    trade.get("quantity", 0),
+                    trade.get("price", 0),
+                    trade.get(
+                        "net_cash_effect",
+                        0,
+                    ),
+                    trade.get(
+                        "fees",
+                        0,
+                    ),
+                    trade.get(
+                        "taxes",
+                        0,
+                    ),
+                )
+            )
+
+            supabase.table(
+                "trades"
+            ).update(
+                {
+                    "cashflow_adjustment":
+                    float(adjustment)
+                }
+            ).eq(
+                "id",
+                trade["id"]
+            ).execute()
+
+            updated_count += 1
+
+        st.success(
+            f"{updated_count} Trades aktualisiert."
+        )
+
+        st.rerun()
 
             st.rerun()
