@@ -605,7 +605,7 @@ with tab_dashboard:
     )
     st.caption(
         "Logik: HOLD bleibt liegen. Systemkapital = Broker Cash + Einstandswerte offener Positionen. "
-        "Satellite ist auf 5 % Systemkapital begrenzt, sofern keine SAT-Position offen ist."
+        "SAT Zielkapital entspricht 5 % des Systemkapitals. Ist bereits eine SAT-Position offen, wird kein zusätzlicher SAT-Cash reserviert."
     )
 
     st.divider()
