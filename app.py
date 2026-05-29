@@ -1953,9 +1953,17 @@ with tab_stats:
             if col in closed_view.columns
         ]
 
+        formatted_closed_view = closed_view[display_cols].copy()
+
+        if "RESULT_PCT" in formatted_closed_view.columns:
+            formatted_closed_view["RESULT_PCT"] = (
+                formatted_closed_view["RESULT_PCT"] * 100
+            ).round(2)
+
         st.dataframe(
-            closed_view[display_cols],
+            formatted_closed_view,
             use_container_width=True,
+            hide_index=True,
         )
 
     else:
