@@ -1975,7 +1975,20 @@ with tab_stats:
             )
         
         st.dataframe(
-            formatted_closed_view,
+            formatted_closed_view.style.map(
+                lambda v: (
+                    "color: green; font-weight: bold"
+                    if isinstance(v, (int, float))
+                    and v > 0
+                    else (
+                        "color: red; font-weight: bold"
+                        if isinstance(v, (int, float))
+                        and v < 0
+                        else ""
+                    )
+                ),
+                subset=["RESULT"],
+            ),
             use_container_width=True,
             hide_index=True,
         )
