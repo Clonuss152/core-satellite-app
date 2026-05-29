@@ -291,6 +291,9 @@ with tab_dashboard:
     next_core_display = "-"
     next_sat_display = "-"
 
+    core_rebalance_due = False
+    sat_rebalance_due = False
+
     if not rebalance_df.empty:
         core_state = rebalance_df[
             rebalance_df["system_type"] == "CORE"
@@ -304,18 +307,23 @@ with tab_dashboard:
             not core_state.empty
             and pd.notna(core_state.iloc[0]["next_rebalance_date"])
         ):
-            next_core_display = pd.to_datetime(
+            next_core_date = pd.to_datetime(
                 core_state.iloc[0]["next_rebalance_date"]
-            ).strftime("%d.%m.%Y")
+            ).date()
+    
+            next_core_display = next_core_date.strftime("%d.%m.%Y")
+            core_rebalance_due = today >= next_core_date
 
-        if (
-            not sat_state.empty
-            and pd.notna(sat_state.iloc[0]["next_rebalance_date"])
-        ):
-            next_sat_display = pd.to_datetime(
-                sat_state.iloc[0]["next_rebalance_date"]
-            ).strftime("%d.%m.%Y")
+    if (
+        not sat_state.empty
+        and pd.notna(sat_state.iloc[0]["next_rebalance_date"])
+    ):
+        next_sat_date = pd.to_datetime(
+            sat_state.iloc[0]["next_rebalance_date"]
+        ).date()
 
+        next_sat_display = next_sat_date.strftime("%d.%m.%Y")
+        sat_rebalance_due = today >= next_sat_date
     regime_snapshot = load_latest_regime_snapshot(supabase)
     latest_regime = None
 
