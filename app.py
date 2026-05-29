@@ -258,16 +258,16 @@ def prepare_trade_from_order(row, system_type):
 # TABS
 # ===================================================
 
-tab_dashboard, tab_portfolio, tab_trades, tab_data, tab_admin = st.tabs(
+tab_dashboard, tab_portfolio, tab_trades, tab_stats, tab_data, tab_admin = st.tabs(
     [
         "Dashboard",
         "Portfolio",
         "Trades",
+        "Statistik",
         "Daten",
         "Admin",
     ]
 )
-
 
 # ===================================================
 # DASHBOARD
