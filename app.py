@@ -71,7 +71,15 @@ def format_eur(value):
     except Exception:
         return "-"
 
+def calculate_cashflow_adjustment(action, quantity, price, net_cash_effect):
+    gross_amount = float(quantity) * float(price)
 
+    if action == "BUY":
+        expected_cash_flow = -gross_amount
+    else:
+        expected_cash_flow = gross_amount
+
+    return float(net_cash_effect) - expected_cash_flow
 
 def get_latest_broker_cash_from_state(cash_state_df):
     if cash_state_df.empty:
