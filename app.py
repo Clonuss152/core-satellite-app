@@ -1327,6 +1327,11 @@ with tab_trades:
                         fees,
                         taxes,
                     ),
+                    "snapshot_date": snapshot_date,
+                    "rank_position": rank_position,
+                    "momentum_score": momentum_score,
+                    "signal_reason": signal_reason,
+                    "target_leverage": target_leverage,
                     "notes": notes,
                 }
             ).execute()
