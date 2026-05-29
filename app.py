@@ -1060,47 +1060,193 @@ with tab_trades:
 
     st.subheader("Trade Historie")
 
-if not trade_df.empty:
+    if not trade_df.empty:
 
-    st.dataframe(
-        trade_df,
-        use_container_width=True
-    )
-
-    st.subheader("Trade löschen")
-
-    for idx, row in trade_df.sort_values(
-        "trade_date",
-        ascending=False
-    ).iterrows():
-
-        col1, col2, col3, col4 = st.columns([2, 2, 3, 1])
-
-        col1.write(row.get("trade_date", ""))
-        col2.write(row.get("action", ""))
-        col3.write(
-            f"{row.get('underlying_ticker', '')} | "
-            f"{row.get('quantity', '')} Stück | "
-            f"{row.get('price', '')}"
+        st.dataframe(
+            trade_df,
+            use_container_width=True
         )
 
-        if col4.button(
-            "Löschen",
-            key=f"delete_trade_{row['id']}"
-        ):
+        st.subheader("Trade bearbeiten")
 
-            supabase.table("trades").delete().eq(
-                "id",
-                row["id"]
-            ).execute()
+        edit_df = trade_df.sort_values(
+            "trade_date",
+            ascending=False
+        ).copy()
 
-            st.success("Trade gelöscht.")
-            st.rerun()
+        edit_options = []
 
-else:
+        for _, row in edit_df.iterrows():
+            label = (
+                f"{row.get('trade_date', '')} | "
+                f"{row.get('action', '')} | "
+                f"{row.get('system_type', '')} | "
+                f"{row.get('underlying_ticker', '')} | "
+                f"{row.get('quantity', '')} Stück | "
+                f"{row.get('price', '')}"
+            )
+            edit_options.append((row["id"], label))
 
-    st.info("Noch keine Trades vorhanden.")
+        selected_trade_id = st.selectbox(
+            "Trade auswählen",
+            options=[item[0] for item in edit_options],
+            format_func=lambda x: dict(edit_options).get(x, str(x)),
+        )
 
+        selected_trade = edit_df[
+            edit_df["id"] == selected_trade_id
+        ].iloc[0]
+
+        with st.form("edit_trade_form"):
+
+            edit_trade_date = st.date_input(
+                "Trade Datum",
+                value=pd.to_datetime(
+                    selected_trade.get("trade_date")
+                ).date(),
+                format="DD.MM.YYYY",
+                key="edit_trade_date",
+            )
+
+            edit_action = st.selectbox(
+                "Aktion",
+                ["BUY", "SELL"],
+                index=["BUY", "SELL"].index(
+                    selected_trade.get("action", "BUY")
+                ),
+                key="edit_action",
+            )
+
+            edit_system_type = st.selectbox(
+                "System",
+                ["CORE", "SATELLITE"],
+                index=["CORE", "SATELLITE"].index(
+                    selected_trade.get("system_type", "CORE")
+                ),
+                key="edit_system_type",
+            )
+
+            edit_underlying_index = 0
+
+            if selected_trade.get("underlying_ticker") in underlying_options:
+                edit_underlying_index = underlying_options.index(
+                    selected_trade.get("underlying_ticker")
+                )
+
+            edit_underlying_ticker = st.selectbox(
+                "Underlying",
+                underlying_options,
+                index=edit_underlying_index,
+                key="edit_underlying_ticker",
+            )
+
+            edit_turbo_wkn = st.text_input(
+                "Turbo WKN",
+                value=safe_value(selected_trade.get("turbo_wkn", "")),
+                key="edit_turbo_wkn",
+            )
+
+            edit_turbo_isin = st.text_input(
+                "Turbo ISIN",
+                value=safe_value(selected_trade.get("turbo_isin", "")),
+                key="edit_turbo_isin",
+            )
+
+            edit_issuer = st.text_input(
+                "Emittent",
+                value=safe_value(selected_trade.get("issuer", "")),
+                key="edit_issuer",
+            )
+
+            edit_quantity = st.number_input(
+                "Stückzahl",
+                step=1.0,
+                value=float(selected_trade.get("quantity", 0.0)),
+                key="edit_quantity",
+            )
+
+            edit_price = st.number_input(
+                "Kurs",
+                step=0.01,
+                value=float(selected_trade.get("price", 0.0)),
+                key="edit_price",
+            )
+
+            edit_cash_flow = st.number_input(
+                "Tatsächlicher Cash Flow laut Broker",
+                step=0.01,
+                value=float(selected_trade.get("net_cash_effect", 0.0)),
+                key="edit_cash_flow",
+            )
+
+            edit_notes = st.text_input(
+                "Notizen",
+                value=safe_value(selected_trade.get("notes", "")),
+                key="edit_notes",
+            )
+
+            submit_edit_trade = st.form_submit_button(
+                "Trade aktualisieren"
+            )
+
+            if submit_edit_trade:
+
+                supabase.table("trades").update(
+                    {
+                        "trade_date": str(edit_trade_date),
+                        "system_type": edit_system_type,
+                        "action": edit_action,
+                        "underlying_ticker": edit_underlying_ticker,
+                        "turbo_wkn": edit_turbo_wkn,
+                        "turbo_isin": edit_turbo_isin,
+                        "issuer": edit_issuer,
+                        "quantity": int(edit_quantity),
+                        "price": float(edit_price),
+                        "gross_amount": float(edit_quantity * edit_price),
+                        "net_cash_effect": float(edit_cash_flow),
+                        "notes": edit_notes,
+                    }
+                ).eq(
+                    "id",
+                    selected_trade_id
+                ).execute()
+
+                st.success("Trade aktualisiert.")
+                st.rerun()
+
+        st.subheader("Trade löschen")
+
+        for idx, row in trade_df.sort_values(
+            "trade_date",
+            ascending=False
+        ).iterrows():
+
+            col1, col2, col3, col4 = st.columns([2, 2, 3, 1])
+
+            col1.write(row.get("trade_date", ""))
+            col2.write(row.get("action", ""))
+            col3.write(
+                f"{row.get('underlying_ticker', '')} | "
+                f"{row.get('quantity', '')} Stück | "
+                f"{row.get('price', '')}"
+            )
+
+            if col4.button(
+                "Löschen",
+                key=f"delete_trade_{row['id']}"
+            ):
+
+                supabase.table("trades").delete().eq(
+                    "id",
+                    row["id"]
+                ).execute()
+
+                st.success("Trade gelöscht.")
+                st.rerun()
+
+    else:
+
+        st.info("Noch keine Trades vorhanden.")
 # ===================================================
 # DATEN
 # ===================================================
