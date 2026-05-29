@@ -1556,18 +1556,27 @@ with tab_stats:
         metric_card(
             "Gewinnquote",
             f"{stats['win_rate']:.1%}",
+            status=status_from_win_rate(
+                stats["win_rate"]
+            ),
         )
 
     with k3:
         metric_card(
             "Nettoergebnis",
             format_eur(stats["net_result"]),
+            status=status_from_value(
+                stats["net_result"]
+            ),
         )
 
     with k4:
         metric_card(
             "Profit Factor",
             f"{stats['profit_factor']:.2f}",
+            status=status_from_profit_factor(
+                stats["profit_factor"]
+            ),
         )
 
     st.markdown("### Gewinn / Verlust")
@@ -1590,12 +1599,14 @@ with tab_stats:
         metric_card(
             "Gesamtgewinn",
             format_eur(stats["total_profit"]),
+            status="good" if stats["total_profit"] > 0 else "neutral",
         )
 
     with g4:
         metric_card(
             "Gesamtverlust",
             format_eur(stats["total_loss"]),
+            status="bad" if stats["total_loss"] < 0 else "neutral",
         )
 
     g5, g6, g7, g8 = st.columns(4)
@@ -1604,24 +1615,28 @@ with tab_stats:
         metric_card(
             "Ø Gewinntrade",
             format_eur(stats["average_win"]),
+            status="good" if stats["average_win"] > 0 else "neutral",
         )
 
     with g6:
         metric_card(
             "Ø Verlusttrade",
             format_eur(stats["average_loss"]),
+            status="bad" if stats["average_loss"] < 0 else "neutral",
         )
 
     with g7:
         metric_card(
             "Größter Gewinner",
             format_eur(stats["largest_winner"]),
+            status="good" if stats["largest_winner"] > 0 else "neutral",
         )
 
     with g8:
         metric_card(
             "Größter Verlierer",
             format_eur(stats["largest_loser"]),
+            status="bad" if stats["largest_loser"] < 0 else "neutral",
         )
 
     st.markdown("### CORE vs SATELLITE")
@@ -1643,12 +1658,18 @@ with tab_stats:
             metric_card(
                 "Gewinnquote",
                 f"{stats['core_win_rate']:.1%}",
+                status=status_from_win_rate(
+                    stats["core_win_rate"]
+                ),
             )
 
         with c3:
             metric_card(
                 "Netto",
                 format_eur(stats["core_net_result"]),
+                status=status_from_value(
+                    stats["core_net_result"]
+                ),
             )
 
         c4, c5 = st.columns(2)
@@ -1657,12 +1678,22 @@ with tab_stats:
             metric_card(
                 "Ø Gewinn",
                 format_eur(stats["core_average_win"]),
+                status=(
+                    "good"
+                    if stats["core_average_win"] > 0
+                    else "neutral"
+                ),
             )
 
         with c5:
             metric_card(
                 "Ø Verlust",
                 format_eur(stats["core_average_loss"]),
+                status=(
+                    "bad"
+                    if stats["core_average_loss"] < 0
+                    else "neutral"
+                ),
             )
 
     with sat_box:
@@ -1680,12 +1711,18 @@ with tab_stats:
             metric_card(
                 "Gewinnquote",
                 f"{stats['sat_win_rate']:.1%}",
+                status=status_from_win_rate(
+                    stats["sat_win_rate"]
+                ),
             )
 
         with s3:
             metric_card(
                 "Netto",
                 format_eur(stats["sat_net_result"]),
+                status=status_from_value(
+                    stats["sat_net_result"]
+                ),
             )
 
         s4, s5 = st.columns(2)
@@ -1694,12 +1731,22 @@ with tab_stats:
             metric_card(
                 "Ø Gewinn",
                 format_eur(stats["sat_average_win"]),
+                status=(
+                    "good"
+                    if stats["sat_average_win"] > 0
+                    else "neutral"
+                ),
             )
 
         with s5:
             metric_card(
                 "Ø Verlust",
                 format_eur(stats["sat_average_loss"]),
+                status=(
+                    "bad"
+                    if stats["sat_average_loss"] < 0
+                    else "neutral"
+                ),
             )
 
     st.markdown("### Kosten / Steuern / Differenzen")
@@ -1710,18 +1757,31 @@ with tab_stats:
         metric_card(
             "Gebühren",
             format_eur(stats["total_fees"]),
+            status=(
+                "bad"
+                if stats["total_fees"] > 0
+                else "neutral"
+            ),
         )
 
     with cost2:
         metric_card(
             "Steuern",
             format_eur(stats["total_taxes"]),
+            status=(
+                "bad"
+                if stats["total_taxes"] > 0
+                else "neutral"
+            ),
         )
 
     with cost3:
         metric_card(
             "Unerklärte Restdifferenz",
             format_eur(stats["total_cashflow_adjustment"]),
+            status=status_from_value(
+                -stats["total_cashflow_adjustment"]
+            ),
         )
 
     st.caption(
