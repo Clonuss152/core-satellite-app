@@ -1722,7 +1722,10 @@ with tab_stats:
                     else "neutral"
                 ),
             )
-
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True,
+        )
     with sat_box:
         st.markdown("#### SATELLITE")
 
