@@ -1727,7 +1727,15 @@ with tab_stats:
             unsafe_allow_html=True,
         )
     with sat_box:
-        st.markdown("#### SATELLITE")
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title-sat">
+                    SATELLITE
+                </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         s1, s2, s3 = st.columns(3)
 
