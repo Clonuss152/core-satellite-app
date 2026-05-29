@@ -1232,6 +1232,78 @@ with tab_trades:
             signal_reason = None
             target_leverage = None
             
+            latest_order_snapshot = load_latest_order_snapshot(
+                supabase,
+                trade_system_type,
+            )
+
+            if not latest_order_snapshot.empty:
+
+                order_match = latest_order_snapshot[
+                    latest_order_snapshot["ticker"] == underlying_ticker
+                ]
+
+                if not order_match.empty:
+
+                    order_row = order_match.iloc[0]
+
+                    snapshot_date = order_row.get(
+                        "snapshot_date",
+                        None,
+                    )
+
+                    rank_position = order_row.get(
+                        "rank",
+                        None,
+                    )
+
+                    signal_reason = order_row.get(
+                        "reason",
+                        None,
+                    )
+
+                    target_leverage = order_row.get(
+                        "target_leverage",
+                        None,
+                    )
+
+            latest_momentum_snapshot = load_latest_momentum_snapshot(
+                supabase,
+                trade_system_type,
+            )
+
+            if not latest_momentum_snapshot.empty:
+
+                momentum_match = latest_momentum_snapshot[
+                    latest_momentum_snapshot["ticker"] == underlying_ticker
+                ]
+
+                if not momentum_match.empty:
+
+                    momentum_row = momentum_match.iloc[0]
+
+                    momentum_score = momentum_row.get(
+                        "score",
+                        None,
+                    )
+
+                    if snapshot_date is None:
+                        snapshot_date = momentum_row.get(
+                            "snapshot_date",
+                            None,
+                        )
+
+                    if rank_position is None:
+                        rank_position = momentum_row.get(
+                            "rank",
+                            None,
+                        )
+
+                    if target_leverage is None:
+                        target_leverage = momentum_row.get(
+                            "target_leverage",
+                            None,
+                        )
             supabase.table("trades").insert(
                 {
                     "trade_date": str(trade_date),
