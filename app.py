@@ -71,69 +71,30 @@ def format_eur(value):
     except Exception:
         return "-"
         
-def metric_card(
-    title,
-    value,
-    subtitle="",
-    status="neutral",
-):
+def metric_card(title, value, subtitle="", status="neutral"):
 
     if status == "good":
         value_color = "#16a34a"
-
     elif status == "bad":
         value_color = "#dc2626"
-
     else:
         value_color = "#111827"
 
     subtitle_html = ""
-
     if subtitle:
-        subtitle_html = f"""
-        <div style="
-            font-size: 0.75rem;
-            color: #9ca3af;
-            margin-top: 4px;
-        ">
-            {subtitle}
+        subtitle_html = f"<div class='metric-subtitle'>{subtitle}</div>"
+
+    html = f"""
+    <div class="metric-card">
+        <div class="metric-title">{title}</div>
+        <div class="metric-value" style="color: {value_color};">
+            {value}
         </div>
-        """
+        {subtitle_html}
+    </div>
+    """
 
-    st.markdown(
-        f"""
-        <div style="
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 14px;
-            background-color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            margin-bottom: 10px;
-            min-height: 90px;
-        ">
-            <div style="
-                font-size: 0.80rem;
-                color: #6b7280;
-                margin-bottom: 8px;
-            ">
-                {title}
-            </div>
-
-            <div style="
-                font-size: 1.45rem;
-                font-weight: 700;
-                color: {value_color};
-                line-height: 1.2;
-            ">
-                {value}
-            </div>
-
-            {subtitle_html}
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown(html, unsafe_allow_html=True)
     
 def status_from_value(value):
 
