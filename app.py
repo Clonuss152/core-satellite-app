@@ -1248,6 +1248,20 @@ with tab_trades:
                         f"Cashflow-Differenz / Gebühren-Steuern-Korrektur: "
                         f"{edit_adjustment:,.2f} €"
                     )
+
+                    edit_fees = st.number_input(
+                        "Gebühren",
+                        step=0.01,
+                        value=float(selected_trade.get("fees", 0.0)),
+                        key="edit_fees",
+                    )
+
+                    edit_taxes = st.number_input(
+                        "Steuern",
+                        step=0.01,
+                        value=float(selected_trade.get("taxes", 0.0)),
+                        key="edit_taxes",
+                    )
                     
                     edit_notes = st.text_input(
                         "Notizen",
