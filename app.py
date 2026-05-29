@@ -1663,7 +1663,15 @@ with tab_stats:
     core_box, sat_box = st.columns(2)
 
     with core_box:
-        st.markdown("#### CORE")
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title-core">
+                    CORE
+                </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         c1, c2, c3 = st.columns(3)
 
