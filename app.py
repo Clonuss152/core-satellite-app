@@ -71,38 +71,117 @@ def format_eur(value):
     except Exception:
         return "-"
         
-def metric_card(title, value, subtitle=""):
+def metric_card(
+    title,
+    value,
+    subtitle="",
+    status="neutral",
+):
+
+    if status == "good":
+        value_color = "#16a34a"
+
+    elif status == "bad":
+        value_color = "#dc2626"
+
+    else:
+        value_color = "#111827"
+
     subtitle_html = ""
 
     if subtitle:
         subtitle_html = f"""
-            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">
-                {subtitle}
-            </div>
+        <div style="
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: 4px;
+        ">
+            {subtitle}
+        </div>
         """
 
     st.markdown(
         f"""
         <div style="
             border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 12px 14px;
-            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 14px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             margin-bottom: 10px;
-            min-height: 72px;
+            min-height: 90px;
         ">
-            <div style="font-size: 0.78rem; color: #6b7280; margin-bottom: 6px;">
+            <div style="
+                font-size: 0.80rem;
+                color: #6b7280;
+                margin-bottom: 8px;
+            ">
                 {title}
             </div>
-            <div style="font-size: 1.25rem; font-weight: 650; color: #111827;">
+
+            <div style="
+                font-size: 1.45rem;
+                font-weight: 700;
+                color: {value_color};
+                line-height: 1.2;
+            ">
                 {value}
             </div>
+
             {subtitle_html}
+
         </div>
         """,
         unsafe_allow_html=True,
     )
+    
+def status_from_value(value):
 
+    try:
+        value = float(value)
+    except:
+        return "neutral"
+
+    if value > 0:
+        return "good"
+
+    if value < 0:
+        return "bad"
+
+    return "neutral"
+
+
+def status_from_win_rate(value):
+
+    try:
+        value = float(value)
+    except:
+        return "neutral"
+
+    if value >= 0.5:
+        return "good"
+
+    if value > 0:
+        return "bad"
+
+    return "neutral"
+
+
+def status_from_profit_factor(value):
+
+    try:
+        value = float(value)
+    except:
+        return "neutral"
+
+    if value >= 1:
+        return "good"
+
+    if value > 0:
+        return "bad"
+
+    return "neutral"
+    
 def calculate_cashflow_adjustment(
     action,
     quantity,
