@@ -1036,6 +1036,18 @@ with tab_trades:
             step=0.01,
         )
 
+        fees = st.number_input(
+            "Gebühren",
+            step=0.01,
+            value=0.0,
+        )
+
+        taxes = st.number_input(
+            "Steuern",
+            step=0.01,
+            value=0.0,
+        )
+
         notes = st.text_input("Notizen")
         submit_trade = st.form_submit_button("Trade speichern")
 
