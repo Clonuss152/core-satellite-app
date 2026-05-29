@@ -70,6 +70,43 @@ def format_eur(value):
         return f"{float(value):,.0f} €"
     except Exception:
         return "-"
+def metric_card(title, value, subtitle=""):
+    st.markdown(
+        f"""
+        <div style="
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 14px 16px;
+            background-color: #ffffff;
+            margin-bottom: 10px;
+            min-height: 86px;
+        ">
+            <div style="
+                font-size: 0.78rem;
+                color: #6b7280;
+                margin-bottom: 6px;
+            ">
+                {title}
+            </div>
+            <div style="
+                font-size: 1.45rem;
+                font-weight: 650;
+                color: #111827;
+                line-height: 1.2;
+            ">
+                {value}
+            </div>
+            <div style="
+                font-size: 0.75rem;
+                color: #9ca3af;
+                margin-top: 4px;
+            ">
+                {subtitle}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 def calculate_cashflow_adjustment(
     action,
