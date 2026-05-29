@@ -70,39 +70,34 @@ def format_eur(value):
         return f"{float(value):,.0f} €"
     except Exception:
         return "-"
+        
 def metric_card(title, value, subtitle=""):
+    subtitle_html = ""
+
+    if subtitle:
+        subtitle_html = f"""
+            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">
+                {subtitle}
+            </div>
+        """
+
     st.markdown(
         f"""
         <div style="
             border: 1px solid #e5e7eb;
             border-radius: 10px;
-            padding: 14px 16px;
+            padding: 12px 14px;
             background-color: #ffffff;
             margin-bottom: 10px;
-            min-height: 86px;
+            min-height: 72px;
         ">
-            <div style="
-                font-size: 0.78rem;
-                color: #6b7280;
-                margin-bottom: 6px;
-            ">
+            <div style="font-size: 0.78rem; color: #6b7280; margin-bottom: 6px;">
                 {title}
             </div>
-            <div style="
-                font-size: 1.45rem;
-                font-weight: 650;
-                color: #111827;
-                line-height: 1.2;
-            ">
+            <div style="font-size: 1.25rem; font-weight: 650; color: #111827;">
                 {value}
             </div>
-            <div style="
-                font-size: 0.75rem;
-                color: #9ca3af;
-                margin-top: 4px;
-            ">
-                {subtitle}
-            </div>
+            {subtitle_html}
         </div>
         """,
         unsafe_allow_html=True,
