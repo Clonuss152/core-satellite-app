@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client
 from datetime import date
-
+from trade_statistics import calculate_trade_statistics
 from config import CORE_TICKERS, SAT_TICKERS
 from utils import add_business_days
 from daily_update import run_daily_update
