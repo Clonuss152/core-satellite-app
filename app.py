@@ -567,7 +567,7 @@ with tab_dashboard:
             st.success("Broker Cash gespeichert.")
             st.rerun()
 
-    cash1, cash2, cash3, cash4, cash5 = st.columns(5)
+    cash1, cash2, cash3, cash4, cash5, cash6 = st.columns(6)
 
     cash1.metric(
         "Broker Cash",
@@ -590,6 +590,16 @@ with tab_dashboard:
     )
 
     cash5.metric(
+        "SAT Abweichung",
+        format_eur(
+            capital_metrics.get(
+                "satellite_gap",
+                0.0
+            )
+        ),
+    )
+    
+    cash6.metric(
         "CORE verfügbar",
         format_eur(capital_metrics.get("core_available_cash", 0.0)),
     )
