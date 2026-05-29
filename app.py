@@ -1333,6 +1333,8 @@ with tab_trades:
                         edit_quantity,
                         edit_price,
                         edit_cash_flow,
+                        edit_fees,
+                        edit_taxes,
                     )
 
                     st.info(
