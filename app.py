@@ -1257,6 +1257,12 @@ with tab_trades:
                                 "price": float(edit_price),
                                 "gross_amount": float(edit_quantity * edit_price),
                                 "net_cash_effect": float(edit_cash_flow),
+                                "cashflow_adjustment": calculate_cashflow_adjustment(
+                                    edit_action,
+                                    edit_quantity,
+                                    edit_price,
+                                    edit_cash_flow,
+                                ),
                                 "notes": edit_notes,
                             }
                         ).eq(
