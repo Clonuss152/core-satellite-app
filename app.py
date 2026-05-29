@@ -1988,7 +1988,11 @@ with tab_stats:
                     )
                 ),
                 subset=["RESULT"],
-            ),
+            )
+        )
+
+        st.dataframe(
+            styled_view,
             use_container_width=True,
             hide_index=True,
         )
