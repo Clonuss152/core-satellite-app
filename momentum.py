@@ -11,28 +11,54 @@ def calculate_momentum(prices, lookbacks, weights):
             continue
 
         latest_price = group.iloc[-1]["adj_close"]
-        score = 0
         momentum_values = {}
 
-        for lookback, weight in zip(lookbacks, weights):
+        for lookback in lookbacks:
             old_price = group.iloc[-lookback - 1]["adj_close"]
             momentum = (latest_price / old_price) - 1
 
             momentum_values[f"mom_{lookback}d"] = momentum
-            score += momentum * weight
 
-        rows.append({
-            "ticker": ticker,
-            "latest_date": group.iloc[-1]["price_date"].date(),
-            "latest_price": latest_price,
-            "score": score,
-            **momentum_values
-        })
+        rows.append(
+            {
+                "ticker": ticker,
+                "latest_date": group.iloc[-1]["price_date"].date(),
+                "latest_price": latest_price,
+                **momentum_values,
+            }
+        )
 
     result_df = pd.DataFrame(rows)
 
-    if not result_df.empty:
-        result_df = result_df.sort_values("score", ascending=False)
-        result_df["rank"] = range(1, len(result_df) + 1)
+    if result_df.empty:
+        return result_df
+
+    score = pd.Series(
+        0.0,
+        index=result_df.index,
+    )
+
+    for lookback, weight in zip(lookbacks, weights):
+        momentum_col = f"mom_{lookback}d"
+        rank_col = f"rank_{lookback}d"
+
+        result_df[rank_col] = result_df[momentum_col].rank(
+            ascending=False,
+            method="min",
+        )
+
+        score += result_df[rank_col] * weight
+
+    result_df["score"] = score
+
+    result_df = result_df.sort_values(
+        "score",
+        ascending=True,
+    )
+
+    result_df["rank"] = range(
+        1,
+        len(result_df) + 1,
+    )
 
     return result_df
