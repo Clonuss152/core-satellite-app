@@ -1064,8 +1064,8 @@ with tab_trades:
                     "quantity": int(quantity),
                     "price": float(price),
                     "gross_amount": float(quantity * price),
-                    "fees": 0.0,
-                    "taxes": 0.0,
+                    "fees": float(fees),
+                    "taxes": float(taxes),
                     "net_cash_effect": float(cash_flow),
                     "cashflow_adjustment": calculate_cashflow_adjustment(
                         action,
