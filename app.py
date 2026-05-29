@@ -1953,7 +1953,15 @@ with tab_stats:
             if col in closed_view.columns
         ]
 
-        formatted_closed_view = closed_view[display_cols].copy()
+        formatted_closed_view = (
+            closed_view
+            .sort_values(
+                "SELL_DATE",
+                ascending=False,
+            )
+            [display_cols]
+            .copy()
+        )
 
         if "RESULT_PCT" in formatted_closed_view.columns:
             formatted_closed_view["RESULT_PCT"] = (
