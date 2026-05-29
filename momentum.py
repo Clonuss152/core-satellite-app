@@ -60,5 +60,11 @@ def calculate_momentum(prices, lookbacks, weights):
         1,
         len(result_df) + 1,
     )
-
+    print(result_df[
+        [
+            "ticker",
+            "score",
+            "rank"
+        ]
+    ].head(10))
     return result_df
