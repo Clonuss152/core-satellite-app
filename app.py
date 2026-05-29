@@ -73,13 +73,12 @@ def format_eur(value):
 
 def calculate_cashflow_adjustment(action, quantity, price, net_cash_effect):
     gross_amount = float(quantity) * float(price)
+    actual_cash_flow = abs(float(net_cash_effect))
 
     if action == "BUY":
-        expected_cash_flow = -gross_amount
-    else:
-        expected_cash_flow = gross_amount
+        return gross_amount - actual_cash_flow
 
-    return float(net_cash_effect) - expected_cash_flow
+    return actual_cash_flow - gross_amount
 
 def get_latest_broker_cash_from_state(cash_state_df):
     if cash_state_df.empty:
