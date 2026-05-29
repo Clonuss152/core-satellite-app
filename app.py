@@ -1965,13 +1965,7 @@ with tab_stats:
 
         if "RESULT_PCT" in formatted_closed_view.columns:
             formatted_closed_view["RESULT_PCT"] = (
-                formatted_closed_view["RESULT_PCT"] * 100
-            ).round(2)
-
-            formatted_closed_view["RESULT_PCT"] = (
                 formatted_closed_view["RESULT_PCT"]
-                .astype(str)
-                + " %"
             )
         
         st.dataframe(
