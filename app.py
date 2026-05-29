@@ -1056,6 +1056,12 @@ with tab_trades:
                     "fees": 0.0,
                     "taxes": 0.0,
                     "net_cash_effect": float(cash_flow),
+                    "cashflow_adjustment": calculate_cashflow_adjustment(
+                        action,
+                        quantity,
+                        price,
+                        cash_flow,
+                    ),
                     "notes": notes,
                 }
             ).execute()
