@@ -24,6 +24,18 @@ def calculate_trade_statistics(trade_df):
         "total_fees": 0.0,
         "total_taxes": 0.0,
         "total_cashflow_adjustment": 0.0,
+                "profit_factor": 0.0,
+        "largest_winner": 0.0,
+        "largest_loser": 0.0,
+
+        "core_win_rate": 0.0,
+        "sat_win_rate": 0.0,
+
+        "core_average_win": 0.0,
+        "core_average_loss": 0.0,
+
+        "sat_average_win": 0.0,
+        "sat_average_loss": 0.0,
     }
 
     empty_closed = pd.DataFrame(
