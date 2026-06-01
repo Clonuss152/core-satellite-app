@@ -50,14 +50,27 @@ def save_momentum_snapshot(
 
     rows = []
 
-    for idx, (_, row) in enumerate(
-        ranking_df.iterrows()
-    ):
+    for _, row in ranking_df.iterrows():
 
-        leverage = None
+        target_leverage = row.get(
+            "target_leverage",
+            None
+        )
 
-        if idx < len(leverage_list):
-            leverage = leverage_list[idx]
+        sell_buffer_value = row.get(
+            "sell_buffer",
+            sell_buffer
+        )
+
+        if pd.isna(target_leverage):
+            target_leverage = None
+        else:
+            target_leverage = float(target_leverage)
+
+        if pd.isna(sell_buffer_value):
+            sell_buffer_value = None
+        else:
+            sell_buffer_value = int(sell_buffer_value)
 
         rows.append({
 
@@ -69,8 +82,8 @@ def save_momentum_snapshot(
             "score": float(row["score"]),
             "latest_price": float(row["latest_price"]),
 
-            "target_leverage": leverage,
-            "sell_buffer": sell_buffer
+            "target_leverage": target_leverage,
+            "sell_buffer": sell_buffer_value
 
         })
 
@@ -79,7 +92,6 @@ def save_momentum_snapshot(
         supabase.table(
             "momentum_snapshot"
         ).insert(rows).execute()
-
 
 def save_order_snapshot(supabase, orders_df):
 
