@@ -2015,6 +2015,122 @@ with tab_data:
     else:
         st.info("Noch keine Underlyings vorhanden.")
 
+    st.divider()
+
+    st.subheader("Aktuelle Momentum-Ranglisten")
+
+    latest_core_ranking = enrich_snapshot(
+        load_latest_momentum_snapshot(
+            supabase,
+            "CORE",
+        )
+    )
+
+    latest_sat_ranking = enrich_snapshot(
+        load_latest_momentum_snapshot(
+            supabase,
+            "SATELLITE",
+        )
+    )
+
+    ranking_cols = [
+        "rank",
+        "ticker",
+        "company_name",
+        "isin",
+        "score",
+        "latest_price",
+        "target_leverage",
+    ]
+
+    st.markdown("### CORE Rangliste")
+
+    if not latest_core_ranking.empty:
+
+        core_ranking_view = latest_core_ranking.sort_values(
+            "rank",
+            ascending=True,
+        ).copy()
+
+        core_ranking_view = core_ranking_view.rename(
+            columns={
+                "score": "rank_score",
+            }
+        )
+
+        core_display_cols = [
+            "rank",
+            "ticker",
+            "company_name",
+            "isin",
+            "rank_score",
+            "latest_price",
+            "target_leverage",
+        ]
+
+        core_display_cols = [
+            col for col in core_display_cols
+            if col in core_ranking_view.columns
+        ]
+
+        st.caption(
+            "Rank Score: gewichteter Rang-Score. Kleiner ist besser."
+        )
+
+        st.dataframe(
+            core_ranking_view[core_display_cols],
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    else:
+        st.info("Keine CORE Rangliste vorhanden.")
+
+    st.markdown("### SATELLITE Rangliste")
+
+    if not latest_sat_ranking.empty:
+
+        sat_ranking_view = latest_sat_ranking.sort_values(
+            "rank",
+            ascending=True,
+        ).copy()
+
+        sat_ranking_view = sat_ranking_view.rename(
+            columns={
+                "score": "rank_score",
+            }
+        )
+
+        sat_display_cols = [
+            "rank",
+            "ticker",
+            "company_name",
+            "isin",
+            "rank_score",
+            "latest_price",
+            "target_leverage",
+        ]
+
+        sat_display_cols = [
+            col for col in sat_display_cols
+            if col in sat_ranking_view.columns
+        ]
+
+        st.caption(
+            "Rank Score: gewichteter Rang-Score. Kleiner ist besser."
+        )
+
+        st.dataframe(
+            sat_ranking_view[sat_display_cols],
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    else:
+        st.info("Keine SATELLITE Rangliste vorhanden.")
+
+    st.divider()
+
     st.subheader("Stammdaten CSV Import")
 
     uploaded_file = st.file_uploader(
