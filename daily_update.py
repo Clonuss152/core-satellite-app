@@ -230,19 +230,45 @@ def run_daily_update(incremental=True):
         top10_mom
     )
 
+    core_rank_snapshot = core_rank.copy()
+    core_rank_snapshot["target_leverage"] = None
+    core_rank_snapshot["sell_buffer"] = core_sell_buffer
+
+    core_target_leverage_map = dict(
+        zip(
+            core_target["ticker"],
+            core_target["target_leverage"]
+        )
+    )
+
+    core_rank_snapshot["target_leverage"] = (
+        core_rank_snapshot["ticker"]
+        .map(core_target_leverage_map)
+    )
+
+    sat_rank_snapshot = sat_rank.copy()
+    sat_rank_snapshot["target_leverage"] = None
+    sat_rank_snapshot["sell_buffer"] = 3
+
+    if not sat_target.empty:
+        sat_rank_snapshot.loc[
+            sat_rank_snapshot["ticker"] == sat_target.iloc[0]["ticker"],
+            "target_leverage"
+        ] = 10.0
+
     save_momentum_snapshot(
         supabase,
         "CORE",
-        core_target,
-        core_leverage,
+        core_rank_snapshot,
+        [],
         core_sell_buffer
     )
 
     save_momentum_snapshot(
         supabase,
         "SATELLITE",
-        sat_target,
-        [10.0],
+        sat_rank_snapshot,
+        [],
         3
     )
 
