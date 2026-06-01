@@ -63,35 +63,58 @@ def generate_core_orders(
 
         })
 
+    sell_count = sum(
+        1
+        for order in core_orders
+        if order["action"] == "SELL"
+    )
+
+    open_core_count = len(current_core)
+
+    missing_slots = max(
+        0,
+        core_size - open_core_count
+    )
+
+    buy_slots = sell_count + missing_slots
+
+    buy_candidates = []
+
     for _, row in core_target.iterrows():
 
         ticker = row["ticker"]
 
         if ticker not in current_core:
 
-            meta = get_underlying_info(
-                ticker,
-                df
-            )
+            buy_candidates.append(row)
 
-            core_orders.append({
+    for row in buy_candidates[:buy_slots]:
 
-                "system": "CORE",
-                "action": "BUY",
-                "ticker": ticker,
+        ticker = row["ticker"]
 
-                "company_name": meta["company_name"],
-                "isin": meta["isin"],
-                "wkn": meta["wkn"],
-                "exchange": meta["exchange"],
-                "currency": meta["currency"],
+        meta = get_underlying_info(
+            ticker,
+            df
+        )
 
-                "reason": "Neue Zielposition",
+        core_orders.append({
 
-                "target_leverage": row["target_leverage"],
-                "rank": row["rank"]
+            "system": "CORE",
+            "action": "BUY",
+            "ticker": ticker,
 
-            })
+            "company_name": meta["company_name"],
+            "isin": meta["isin"],
+            "wkn": meta["wkn"],
+            "exchange": meta["exchange"],
+            "currency": meta["currency"],
+
+            "reason": "Neue Zielposition",
+
+            "target_leverage": row["target_leverage"],
+            "rank": row["rank"]
+
+        })
 
     return pd.DataFrame(core_orders)
 
