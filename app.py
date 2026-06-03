@@ -1826,7 +1826,6 @@ with tab_stats:
                 stats["profit_factor"]
             ),
         )
-
     ko1, ko2, ko3, ko4 = st.columns(4)
 
     with ko1:
@@ -1856,7 +1855,7 @@ with tab_stats:
             stats["sat_ko_trades"],
             status="bad" if stats["sat_ko_trades"] > 0 else "neutral",
         )
-
+    
     st.markdown("### Gewinn / Verlust")
     
     st.markdown("### CORE vs SATELLITE")
