@@ -1390,6 +1390,7 @@ with tab_trades:
             "trade_date",
             "system_type",
             "action",
+            "exit_reason",
             "underlying_ticker",
             "company_name",
             "quantity",
@@ -1400,7 +1401,6 @@ with tab_trades:
             "net_cash_effect",
             "cashflow_adjustment",
         ]
-
         display_cols = [
             col for col in display_cols
             if col in trade_history_df.columns
