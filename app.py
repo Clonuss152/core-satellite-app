@@ -1323,6 +1323,35 @@ with tab_trades:
                             "target_leverage",
                             None,
                         )
+
+                    if pd.isna(snapshot_date):
+                        snapshot_date = None
+
+                    if pd.isna(rank_position):
+                        rank_position = None
+                    else:
+                        rank_position = int(rank_position)
+
+                    if pd.isna(momentum_score):
+                        momentum_score = None
+                    else:
+                        momentum_score = float(momentum_score)
+
+                    if pd.isna(target_leverage):
+                        target_leverage = None
+                    else:
+                        target_leverage = float(target_leverage)
+        
+                    if pd.isna(signal_reason):
+                        signal_reason = None
+                    else:
+                        signal_reason = str(signal_reason)
+
+                    if pd.isna(exit_reason):
+                        exit_reason = None
+                    else:
+                        exit_reason = str(exit_reason)
+            
             supabase.table("trades").insert(
                 {
                     "trade_date": str(trade_date),
