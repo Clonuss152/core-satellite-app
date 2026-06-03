@@ -1153,16 +1153,15 @@ with tab_trades:
         action = st.selectbox(
             "Aktion",
             ["BUY", "SELL"],
-            index=["BUY", "SELL"].index(prefill.get("action", "BUY")),
+            index=["BUY", "SELL"].index(
+                prefill.get("action", "BUY")
+            ),
+            key="trade_action",
         )
 
         exit_reason = None
 
-        st.write("Action aktuell:", action)
-
         if action == "SELL":
-
-            st.error("SELL BLOCK WIRD AUSGEFÜHRT")
 
             exit_reason = st.selectbox(
                 "Exit Grund",
@@ -1172,6 +1171,7 @@ with tab_trades:
                     "MANUAL",
                 ],
                 index=0,
+                key="trade_exit_reason",
             )
         
         trade_system_type = st.selectbox(
