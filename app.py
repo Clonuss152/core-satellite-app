@@ -1326,6 +1326,7 @@ with tab_trades:
             supabase.table("trades").insert(
                 {
                     "trade_date": str(trade_date),
+                    "exit_reason": exit_reason,
                     "system_type": trade_system_type,
                     "action": action,
                     "underlying_ticker": underlying_ticker,
