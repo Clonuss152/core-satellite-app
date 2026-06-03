@@ -1153,6 +1153,20 @@ with tab_trades:
             index=["BUY", "SELL"].index(prefill.get("action", "BUY")),
         )
 
+        exit_reason = None
+
+        if action == "SELL":
+
+            exit_reason = st.selectbox(
+                "Exit Grund",
+                [
+                    "NORMAL",
+                    "KO",
+                    "MANUAL",
+                ],
+                index=0,
+            )
+        
         trade_system_type = st.selectbox(
             "System",
             ["CORE", "SATELLITE"],
