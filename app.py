@@ -1686,6 +1686,7 @@ with tab_trades:
                                     edit_fees,
                                     edit_taxes,
                                 ),
+                                "exit_reason": edit_exit_reason,
                                 "notes": edit_notes,
                             }
                         ).eq(
