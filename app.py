@@ -1346,6 +1346,7 @@ with tab_trades:
                     "momentum_score": momentum_score,
                     "signal_reason": signal_reason,
                     "target_leverage": target_leverage,
+                    "exit_reason": exit_reason,
                     "notes": notes,
                 }
             ).execute()
