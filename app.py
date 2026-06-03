@@ -1150,12 +1150,7 @@ with tab_trades:
             format="DD.MM.YYYY",
         )
 
-        action = st.selectbox(
-            "Aktion",
-            ["BUY", "SELL"],
-            index=["BUY", "SELL"].index(
-                prefill.get("action", "BUY")
-            ),
+        action = st.selectbox
             key="trade_action",
         )
 
