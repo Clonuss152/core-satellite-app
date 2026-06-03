@@ -1818,6 +1818,47 @@ with tab_stats:
             status="bad" if stats["largest_loser"] < 0 else "neutral",
         )
 
+    with k4:
+        metric_card(
+            "Profit Factor",
+            f"{stats['profit_factor']:.2f}",
+            status=status_from_profit_factor(
+                stats["profit_factor"]
+            ),
+        )
+
+    ko1, ko2, ko3, ko4 = st.columns(4)
+
+    with ko1:
+        metric_card(
+            "KO Trades",
+            stats["ko_trades"],
+            status="bad" if stats["ko_trades"] > 0 else "neutral",
+        )
+
+    with ko2:
+        metric_card(
+            "KO Quote",
+            f"{stats['ko_rate']:.1%}",
+            status="bad" if stats["ko_rate"] > 0 else "neutral",
+        )
+
+    with ko3:
+        metric_card(
+            "CORE KO",
+            stats["core_ko_trades"],
+            status="bad" if stats["core_ko_trades"] > 0 else "neutral",
+        )
+
+    with ko4:
+        metric_card(
+            "SAT KO",
+            stats["sat_ko_trades"],
+            status="bad" if stats["sat_ko_trades"] > 0 else "neutral",
+        )
+
+    st.markdown("### Gewinn / Verlust")
+    
     st.markdown("### CORE vs SATELLITE")
 
     core_box, sat_box = st.columns(2)
