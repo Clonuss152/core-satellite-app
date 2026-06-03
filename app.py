@@ -1158,7 +1158,11 @@ with tab_trades:
 
         exit_reason = None
 
+        st.write("Action aktuell:", action)
+
         if action == "SELL":
+
+            st.error("SELL BLOCK WIRD AUSGEFÜHRT")
 
             exit_reason = st.selectbox(
                 "Exit Grund",
