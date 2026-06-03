@@ -1150,14 +1150,18 @@ with tab_trades:
             format="DD.MM.YYYY",
         )
 
-        action = st.selectbox
+        action = st.selectbox(
+            "Aktion",
+            ["BUY", "SELL"],
+            index=["BUY", "SELL"].index(
+                prefill.get("action", "BUY")
+            ),
             key="trade_action",
         )
 
         exit_reason = None
 
         if action == "SELL":
-
             exit_reason = st.selectbox(
                 "Exit Grund",
                 [
