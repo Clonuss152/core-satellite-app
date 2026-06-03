@@ -1172,17 +1172,6 @@ with tab_trades:
         if action != "SELL":
             exit_reason = None
 
-        if st.session_state["trade_action"] == "SELL":
-            exit_reason = st.selectbox(
-                "Exit Grund",
-                [
-                    "NORMAL",
-                    "KO",
-                    "MANUAL",
-                ],
-                index=0,
-                key="trade_exit_reason",
-            )
         
         trade_system_type = st.selectbox(
             "System",
