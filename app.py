@@ -1141,8 +1141,6 @@ with tab_trades:
         )
 
     with st.form("trade_form"):
-
-        st.warning("DEBUG: Neues Trade-Formular aktiv")
         
         trade_date = st.date_input(
             "Trade Datum",
