@@ -1528,6 +1528,32 @@ with tab_trades:
                         ),
                         key="edit_action",
                     )
+                    
+                    edit_exit_reason = st.selectbox(
+                        "Exit Grund",
+                        [
+                            "NORMAL",
+                            "KO",
+                            "MANUAL",
+                        ],
+                        index=[
+                            "NORMAL",
+                            "KO",
+                            "MANUAL",
+                        ].index(
+                            selected_trade.get("exit_reason", "NORMAL")
+                            if selected_trade.get("exit_reason") in [
+                                "NORMAL",
+                                "KO",
+                                "MANUAL",
+                            ]
+                            else "NORMAL"
+                        ),
+                        key="edit_exit_reason",
+                    )
+
+                    if edit_action == "BUY":
+                        edit_exit_reason = None
 
                     edit_system_type = st.selectbox(
                         "System",
