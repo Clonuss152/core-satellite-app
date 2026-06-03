@@ -1148,18 +1148,22 @@ with tab_trades:
             format="DD.MM.YYYY",
         )
 
+        action_options = ["BUY", "SELL"]
+
+        default_action = prefill.get("action", "BUY")
+
+        if "trade_action" not in st.session_state:
+            st.session_state["trade_action"] = default_action
+
         action = st.selectbox(
             "Aktion",
-            ["BUY", "SELL"],
-            index=["BUY", "SELL"].index(
-                prefill.get("action", "BUY")
-            ),
+            action_options,
             key="trade_action",
         )
 
         exit_reason = None
 
-        if action == "SELL":
+        if st.session_state["trade_action"] == "SELL":
             exit_reason = st.selectbox(
                 "Exit Grund",
                 [
