@@ -1818,14 +1818,7 @@ with tab_stats:
             status="bad" if stats["largest_loser"] < 0 else "neutral",
         )
 
-    with k4:
-        metric_card(
-            "Profit Factor",
-            f"{stats['profit_factor']:.2f}",
-            status=status_from_profit_factor(
-                stats["profit_factor"]
-            ),
-        )
+   
     ko1, ko2, ko3, ko4 = st.columns(4)
 
     with ko1:
