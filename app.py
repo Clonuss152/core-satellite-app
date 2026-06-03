@@ -1166,10 +1166,9 @@ with tab_trades:
             ],
             index=0,
             key="trade_exit_reason",
-            disabled=(action != "SELL"),
         )
 
-        if action != "SELL":
+        if action == "BUY":
             exit_reason = None
 
         
