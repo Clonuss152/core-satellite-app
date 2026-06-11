@@ -1140,6 +1140,8 @@ with tab_trades:
             f"Vorgeschlagener Zielbetrag: {float(prefill.get('suggested_amount')):,.0f} €"
         )
 
+    
+    
     with st.form("trade_form"):
         
         trade_date = st.date_input(
