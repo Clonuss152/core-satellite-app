@@ -1140,7 +1140,27 @@ with tab_trades:
             f"Vorgeschlagener Zielbetrag: {float(prefill.get('suggested_amount')):,.0f} €"
         )
 
-    
+    underlying_index = 0
+
+    if prefill.get("underlying_ticker") in underlying_options:
+        underlying_index = underlying_options.index(
+            prefill.get("underlying_ticker")
+        )
+
+    underlying_ticker = st.selectbox(
+        "Underlying",
+        underlying_options,
+        index=underlying_index,
+        key="new_trade_underlying_ticker",
+    )
+
+    selected_meta = get_meta(underlying_ticker)
+
+    if selected_meta:
+        st.info(
+            f"{selected_meta.get('company_name', underlying_ticker)} | "
+            f"ISIN: {selected_meta.get('isin', '')}"
+        )    
     
     with st.form("trade_form"):
         
@@ -1181,27 +1201,6 @@ with tab_trades:
                 prefill.get("system_type", "CORE")
             ),
         )
-
-        underlying_index = 0
-
-        if prefill.get("underlying_ticker") in underlying_options:
-            underlying_index = underlying_options.index(
-                prefill.get("underlying_ticker")
-            )
-
-        underlying_ticker = st.selectbox(
-            "Underlying",
-            underlying_options,
-            index=underlying_index,
-        )
-
-        selected_meta = get_meta(underlying_ticker)
-
-        if selected_meta:
-            st.info(
-                f"{selected_meta.get('company_name', underlying_ticker)} | "
-                f"ISIN: {selected_meta.get('isin', '')}"
-            )
 
         turbo_wkn = st.text_input(
             "Turbo WKN",
