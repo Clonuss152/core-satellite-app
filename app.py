@@ -215,8 +215,8 @@ def calculate_cashflow_adjustment(
         float(net_cash_effect)
     )
 
-    fees = abs(float(fees))
-    taxes = abs(float(taxes))
+    fees = (float(fees)
+    taxes = (float(taxes)
 
     expected_cash_flow = (
         gross_amount
