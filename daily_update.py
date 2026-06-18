@@ -269,7 +269,7 @@ def run_daily_update(incremental=True):
         "SATELLITE",
         sat_rank_snapshot,
         [],
-        3
+        6
     )
 
     save_order_snapshot(supabase, core_orders)
