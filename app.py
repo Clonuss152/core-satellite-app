@@ -2438,7 +2438,7 @@ with tab_admin:
         submit_rebalance_execution = st.form_submit_button("Speichern")
 
         if submit_rebalance_execution:
-            cycle_days = 10 if execution_system == "CORE" else 21
+            cycle_days = 10 if execution_system == "CORE" else 17
             next_date = add_business_days(execution_date, cycle_days)
 
             supabase.table("rebalance_state").upsert(
