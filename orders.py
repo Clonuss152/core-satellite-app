@@ -196,7 +196,7 @@ def generate_sat_orders(
                 "exchange": meta_current["exchange"],
                 "currency": meta_current["currency"],
 
-                "reason": "Rank > 4",
+                "reason": "Rank > 7",
                 "rank": current_rank
 
             })
