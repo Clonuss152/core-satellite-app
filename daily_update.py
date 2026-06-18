@@ -188,7 +188,7 @@ def run_daily_update(incremental=True):
     sat_target = sat_rank.head(1).copy()
     sat_target["target_position"] = 1
     sat_target["target_leverage"] = 10.0
-    sat_target["sell_buffer"] = 3
+    sat_target["sell_buffer"] = 6
 
     open_positions = pd.DataFrame()
 
