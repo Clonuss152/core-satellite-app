@@ -248,7 +248,7 @@ def run_daily_update(incremental=True):
 
     sat_rank_snapshot = sat_rank.copy()
     sat_rank_snapshot["target_leverage"] = None
-    sat_rank_snapshot["sell_buffer"] = 3
+    sat_rank_snapshot["sell_buffer"] = 6
 
     if not sat_target.empty:
         sat_rank_snapshot.loc[
