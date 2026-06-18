@@ -571,7 +571,7 @@ with tab_dashboard:
                 cycle_days = (
                     10
                     if execution_system == "CORE"
-                    else 21
+                    else 17
                 )
 
                 next_date = add_business_days(
