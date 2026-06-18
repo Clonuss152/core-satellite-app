@@ -163,7 +163,7 @@ def generate_sat_orders(
             df
         )
 
-        if current_rank <= 4:
+        if current_rank <= 7:
 
             sat_orders.append({
 
