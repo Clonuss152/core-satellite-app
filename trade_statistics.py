@@ -1,6 +1,12 @@
 import pandas as pd
 
 
+SATELLITE_SYSTEM_TYPES = [
+    "SATELLITE_A",
+    "SATELLITE_B",
+]
+
+
 def calculate_trade_statistics(trade_df):
 
     empty_result = {
@@ -13,6 +19,8 @@ def calculate_trade_statistics(trade_df):
         "ko_rate": 0.0,
         "core_ko_trades": 0,
         "sat_ko_trades": 0,
+        "sat_a_ko_trades": 0,
+        "sat_b_ko_trades": 0,
         "ko_loss": 0.0,
 
         "total_profit": 0.0,
@@ -30,6 +38,22 @@ def calculate_trade_statistics(trade_df):
         "sat_winning_trades": 0,
         "sat_losing_trades": 0,
         "sat_net_result": 0.0,
+
+        "sat_a_trades": 0,
+        "sat_a_winning_trades": 0,
+        "sat_a_losing_trades": 0,
+        "sat_a_net_result": 0.0,
+        "sat_a_win_rate": 0.0,
+        "sat_a_average_win": 0.0,
+        "sat_a_average_loss": 0.0,
+
+        "sat_b_trades": 0,
+        "sat_b_winning_trades": 0,
+        "sat_b_losing_trades": 0,
+        "sat_b_net_result": 0.0,
+        "sat_b_win_rate": 0.0,
+        "sat_b_average_win": 0.0,
+        "sat_b_average_loss": 0.0,
 
         "total_fees": 0.0,
         "total_taxes": 0.0,
@@ -164,9 +188,7 @@ def calculate_trade_statistics(trade_df):
         )
     ).reset_index()
 
-    grouped["OPEN_QTY"] = (
-        grouped["BUY_QTY"] - grouped["SELL_QTY"]
-    )
+    grouped["OPEN_QTY"] = grouped["BUY_QTY"] - grouped["SELL_QTY"]
 
     closed_positions = grouped[
         (grouped["BUY_QTY"] > 0)
@@ -219,7 +241,17 @@ def calculate_trade_statistics(trade_df):
     ]
 
     sat_closed = closed_positions[
-        closed_positions["system_type"] == "SATELLITE"
+        closed_positions["system_type"].isin(
+            SATELLITE_SYSTEM_TYPES
+        )
+    ]
+
+    sat_a_closed = closed_positions[
+        closed_positions["system_type"] == "SATELLITE_A"
+    ]
+
+    sat_b_closed = closed_positions[
+        closed_positions["system_type"] == "SATELLITE_B"
     ]
 
     core_winners = core_closed[
@@ -238,6 +270,22 @@ def calculate_trade_statistics(trade_df):
         sat_closed["RESULT"] < 0
     ]
 
+    sat_a_winners = sat_a_closed[
+        sat_a_closed["RESULT"] > 0
+    ]
+
+    sat_a_losers = sat_a_closed[
+        sat_a_closed["RESULT"] < 0
+    ]
+
+    sat_b_winners = sat_b_closed[
+        sat_b_closed["RESULT"] > 0
+    ]
+
+    sat_b_losers = sat_b_closed[
+        sat_b_closed["RESULT"] < 0
+    ]
+
     core_ko = core_closed[
         core_closed["exit_reason"] == "KO"
     ]
@@ -246,13 +294,19 @@ def calculate_trade_statistics(trade_df):
         sat_closed["exit_reason"] == "KO"
     ]
 
+    sat_a_ko = sat_a_closed[
+        sat_a_closed["exit_reason"] == "KO"
+    ]
+
+    sat_b_ko = sat_b_closed[
+        sat_b_closed["exit_reason"] == "KO"
+    ]
+
     total_trades = len(closed_positions)
     winning_trades = len(winners)
     losing_trades = len(losers)
 
-    gross_profit = float(
-        winners["RESULT"].sum()
-    )
+    gross_profit = float(winners["RESULT"].sum())
 
     gross_loss = abs(
         float(
@@ -290,6 +344,18 @@ def calculate_trade_statistics(trade_df):
         else 0.0
     )
 
+    sat_a_win_rate = (
+        len(sat_a_winners) / len(sat_a_closed)
+        if len(sat_a_closed) > 0
+        else 0.0
+    )
+
+    sat_b_win_rate = (
+        len(sat_b_winners) / len(sat_b_closed)
+        if len(sat_b_closed) > 0
+        else 0.0
+    )
+
     ko_trades = len(ko_closed)
 
     result = {
@@ -310,9 +376,13 @@ def calculate_trade_statistics(trade_df):
         ),
         "core_ko_trades": len(core_ko),
         "sat_ko_trades": len(sat_ko),
-        "ko_loss": float(ko_closed["RESULT"].sum())
-        if not ko_closed.empty
-        else 0.0,
+        "sat_a_ko_trades": len(sat_a_ko),
+        "sat_b_ko_trades": len(sat_b_ko),
+        "ko_loss": (
+            float(ko_closed["RESULT"].sum())
+            if not ko_closed.empty
+            else 0.0
+        ),
 
         "total_profit": float(winners["RESULT"].sum()),
         "total_loss": float(losers["RESULT"].sum()),
@@ -339,6 +409,38 @@ def calculate_trade_statistics(trade_df):
         "sat_winning_trades": len(sat_winners),
         "sat_losing_trades": len(sat_losers),
         "sat_net_result": float(sat_closed["RESULT"].sum()),
+
+        "sat_a_trades": len(sat_a_closed),
+        "sat_a_winning_trades": len(sat_a_winners),
+        "sat_a_losing_trades": len(sat_a_losers),
+        "sat_a_net_result": float(sat_a_closed["RESULT"].sum()),
+        "sat_a_win_rate": sat_a_win_rate,
+        "sat_a_average_win": (
+            float(sat_a_winners["RESULT"].mean())
+            if not sat_a_winners.empty
+            else 0.0
+        ),
+        "sat_a_average_loss": (
+            float(sat_a_losers["RESULT"].mean())
+            if not sat_a_losers.empty
+            else 0.0
+        ),
+
+        "sat_b_trades": len(sat_b_closed),
+        "sat_b_winning_trades": len(sat_b_winners),
+        "sat_b_losing_trades": len(sat_b_losers),
+        "sat_b_net_result": float(sat_b_closed["RESULT"].sum()),
+        "sat_b_win_rate": sat_b_win_rate,
+        "sat_b_average_win": (
+            float(sat_b_winners["RESULT"].mean())
+            if not sat_b_winners.empty
+            else 0.0
+        ),
+        "sat_b_average_loss": (
+            float(sat_b_losers["RESULT"].mean())
+            if not sat_b_losers.empty
+            else 0.0
+        ),
 
         "total_fees": float(df["fees"].sum()),
         "total_taxes": float(df["taxes"].sum()),
