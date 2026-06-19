@@ -1,4 +1,5 @@
 import pandas as pd
+
 from utils import get_underlying_info
 
 
@@ -49,7 +50,7 @@ def generate_core_orders(
 
         core_orders.append({
 
-            "system": "CORE",
+            "system_type": "CORE",
             "action": action,
             "ticker": ticker,
 
@@ -99,7 +100,7 @@ def generate_core_orders(
 
         core_orders.append({
 
-            "system": "CORE",
+            "system_type": "CORE",
             "action": "BUY",
             "ticker": ticker,
 
@@ -119,136 +120,225 @@ def generate_core_orders(
     return pd.DataFrame(core_orders)
 
 
-def generate_sat_orders(
-    sat_target,
+def generate_satellite_orders(
     sat_rank,
     open_positions,
     df
 ):
 
-    sat_orders = []
+    orders = []
 
-    current_sat = []
+    sat_a_current = None
+    sat_b_current = None
 
     if not open_positions.empty:
 
-        current_sat = open_positions.loc[
-            open_positions["system_type"] == "SATELLITE",
-            "underlying_ticker"
-        ].tolist()
-
-    if sat_target.empty:
-        return pd.DataFrame()
-
-    sat_top = sat_target.iloc[0]["ticker"]
-
-    if current_sat:
-
-        current_sat_ticker = current_sat[0]
-
-        current_rank_row = sat_rank[
-            sat_rank["ticker"] == current_sat_ticker
+        a_pos = open_positions[
+            open_positions["system_type"] == "SATELLITE_A"
         ]
 
-        if not current_rank_row.empty:
-            current_rank = int(
-                current_rank_row.iloc[0]["rank"]
-            )
+        b_pos = open_positions[
+            open_positions["system_type"] == "SATELLITE_B"
+        ]
 
-        else:
-            current_rank = 999
+        if not a_pos.empty:
+            sat_a_current = a_pos.iloc[0]["underlying_ticker"]
 
-        meta_current = get_underlying_info(
-            current_sat_ticker,
+        if not b_pos.empty:
+            sat_b_current = b_pos.iloc[0]["underlying_ticker"]
+
+    rank_list = sat_rank.sort_values(
+        "rank"
+    )["ticker"].tolist()
+
+    if len(rank_list) == 0:
+        return pd.DataFrame()
+
+    a_target = rank_list[0]
+
+    b_target = None
+
+    for ticker in rank_list:
+
+        if ticker != a_target:
+            b_target = ticker
+            break
+
+    #
+    # SATELLITE A
+    #
+
+    if sat_a_current is not None:
+
+        current_rank_row = sat_rank[
+            sat_rank["ticker"] == sat_a_current
+        ]
+
+        current_rank = (
+            int(current_rank_row.iloc[0]["rank"])
+            if not current_rank_row.empty
+            else 999
+        )
+
+        meta = get_underlying_info(
+            sat_a_current,
             df
         )
 
         if current_rank <= 7:
 
-            sat_orders.append({
-
-                "system": "SATELLITE",
+            orders.append({
+                "system_type": "SATELLITE_A",
                 "action": "HOLD",
-                "ticker": current_sat_ticker,
-
-                "company_name": meta_current["company_name"],
-                "isin": meta_current["isin"],
-                "wkn": meta_current["wkn"],
-                "exchange": meta_current["exchange"],
-                "currency": meta_current["currency"],
-
-                "reason": "Innerhalb SAT Sell Buffer",
-                "rank": current_rank
-
+                "ticker": sat_a_current,
+                "reason": "Innerhalb Sell Buffer",
+                "rank": current_rank,
+                **meta
             })
 
         else:
 
-            sat_orders.append({
-
-                "system": "SATELLITE",
+            orders.append({
+                "system_type": "SATELLITE_A",
                 "action": "SELL",
-                "ticker": current_sat_ticker,
-
-                "company_name": meta_current["company_name"],
-                "isin": meta_current["isin"],
-                "wkn": meta_current["wkn"],
-                "exchange": meta_current["exchange"],
-                "currency": meta_current["currency"],
-
+                "ticker": sat_a_current,
                 "reason": "Rank > 7",
-                "rank": current_rank
-
+                "rank": current_rank,
+                **meta
             })
 
             meta_new = get_underlying_info(
-                sat_top,
+                a_target,
                 df
             )
 
-            sat_orders.append({
-
-                "system": "SATELLITE",
+            orders.append({
+                "system_type": "SATELLITE_A",
                 "action": "BUY",
-                "ticker": sat_top,
-
-                "company_name": meta_new["company_name"],
-                "isin": meta_new["isin"],
-                "wkn": meta_new["wkn"],
-                "exchange": meta_new["exchange"],
-                "currency": meta_new["currency"],
-
-                "reason": "Neue Top-1 Position",
-
+                "ticker": a_target,
+                "reason": "Neue A Position",
                 "target_leverage": 10.0,
-                "rank": 1
-
+                "rank": 1,
+                **meta_new
             })
 
     else:
 
         meta = get_underlying_info(
-            sat_top,
+            a_target,
             df
         )
 
-        sat_orders.append({
-
-            "system": "SATELLITE",
+        orders.append({
+            "system_type": "SATELLITE_A",
             "action": "BUY",
-            "ticker": sat_top,
-
-            "company_name": meta["company_name"],
-            "isin": meta["isin"],
-            "wkn": meta["wkn"],
-            "exchange": meta["exchange"],
-            "currency": meta["currency"],
-
-            "reason": "Keine offene SAT Position",
-
+            "ticker": a_target,
+            "reason": "Keine offene A Position",
             "target_leverage": 10.0,
-            "rank": 1
-
+            "rank": 1,
+            **meta
         })
 
-    return pd.DataFrame(sat_orders)
+    #
+    # B FREIGEBEN FÜR A
+    #
+
+    if sat_b_current == a_target:
+
+        meta = get_underlying_info(
+            sat_b_current,
+            df
+        )
+
+        orders.append({
+            "system_type": "SATELLITE_B",
+            "action": "SELL",
+            "ticker": sat_b_current,
+            "reason": "B freigemacht für A",
+            **meta
+        })
+
+        sat_b_current = None
+
+    #
+    # SATELLITE B
+    #
+
+    if b_target is None:
+        return pd.DataFrame(orders)
+
+    if sat_b_current is not None:
+
+        current_rank_row = sat_rank[
+            sat_rank["ticker"] == sat_b_current
+        ]
+
+        current_rank = (
+            int(current_rank_row.iloc[0]["rank"])
+            if not current_rank_row.empty
+            else 999
+        )
+
+        meta = get_underlying_info(
+            sat_b_current,
+            df
+        )
+
+        if (
+            current_rank <= 7
+            and sat_b_current != a_target
+        ):
+
+            orders.append({
+                "system_type": "SATELLITE_B",
+                "action": "HOLD",
+                "ticker": sat_b_current,
+                "reason": "Innerhalb Sell Buffer",
+                "rank": current_rank,
+                **meta
+            })
+
+        else:
+
+            orders.append({
+                "system_type": "SATELLITE_B",
+                "action": "SELL",
+                "ticker": sat_b_current,
+                "reason": "Rotation",
+                "rank": current_rank,
+                **meta
+            })
+
+            meta_new = get_underlying_info(
+                b_target,
+                df
+            )
+
+            orders.append({
+                "system_type": "SATELLITE_B",
+                "action": "BUY",
+                "ticker": b_target,
+                "reason": "Neue B Position",
+                "target_leverage": 7.0,
+                "rank": 2,
+                **meta_new
+            })
+
+    else:
+
+        meta = get_underlying_info(
+            b_target,
+            df
+        )
+
+        orders.append({
+            "system_type": "SATELLITE_B",
+            "action": "BUY",
+            "ticker": b_target,
+            "reason": "Keine offene B Position",
+            "target_leverage": 7.0,
+            "rank": 2,
+            **meta
+        })
+
+    return pd.DataFrame(orders)
