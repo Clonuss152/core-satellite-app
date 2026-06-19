@@ -3,7 +3,7 @@ import pandas as pd
 from supabase import create_client
 from datetime import date
 from trade_statistics import calculate_trade_statistics
-from config import CORE_TICKERS, SAT_TICKERS
+from config import CORE_TICKERS, SAT_TICKERS, SYSTEM_TYPES, SATELLITE_SYSTEMS
 from utils import add_business_days
 from daily_update import run_daily_update
 from snapshot_loader import (
@@ -467,7 +467,7 @@ with tab_dashboard:
         ]
 
         sat_state = rebalance_df[
-            rebalance_df["system_type"] == "SATELLITE"
+            rebalance_df["system_type"] == "SATELLITE_A"
         ]
 
         if (
@@ -544,16 +544,16 @@ with tab_dashboard:
 
     with due2:
         if sat_rebalance_due:
-            st.success("SATELLITE heute fällig / handelbar")
+            st.success("SAT heute fällig / handelbar")
         else:
-            st.info("SATELLITE heute nicht fällig")
+            st.info("SAT heute nicht fällig")
     with st.expander("Rebalance als ausgeführt speichern"):
 
         with st.form("dashboard_rebalance_execution_form"):
 
             execution_system = st.selectbox(
                 "Ausgeführtes System",
-                ["CORE", "SATELLITE"]
+                SYSTEM_TYPES
             )
 
             execution_date = st.date_input(
@@ -604,8 +604,20 @@ with tab_dashboard:
         load_latest_order_snapshot(supabase, "CORE")
     )
 
-    sat_orders_snapshot = enrich_snapshot(
-        load_latest_order_snapshot(supabase, "SATELLITE")
+    sat_a_orders_snapshot = enrich_snapshot(
+        load_latest_order_snapshot(supabase, "SATELLITE_A")
+    )
+
+    sat_b_orders_snapshot = enrich_snapshot(
+        load_latest_order_snapshot(supabase, "SATELLITE_B")
+    )
+
+    sat_orders_snapshot = pd.concat(
+        [
+            sat_a_orders_snapshot,
+            sat_b_orders_snapshot,
+        ],
+        ignore_index=True,
     )
 
     active_core_orders = pd.DataFrame()
@@ -662,7 +674,7 @@ with tab_dashboard:
 
             existing_sat_positions = set(
                 open_positions[
-                    open_positions["system_type"] == "SATELLITE"
+                    open_positions["system_type"].isin(SATELLITE_SYSTEMS)
                 ]["underlying_ticker"]
             )
 
@@ -740,17 +752,17 @@ with tab_dashboard:
     )
 
     cash3.metric(
-        "SAT Zielkapital",
+        "SAT Gesamt Ziel",
         format_eur(capital_metrics.get("satellite_target_capital", 0.0)),
     )
 
     cash4.metric(
-        "SAT offen",
+        "SAT Gesamt offen",
         format_eur(capital_metrics.get("satellite_open_cost", 0.0)),
     )
 
     cash5.metric(
-        "SAT Abweichung",
+        "SAT Gesamt Abw.",
         format_eur(
             capital_metrics.get(
                 "satellite_gap",
@@ -765,7 +777,7 @@ with tab_dashboard:
     )
     st.caption(
         "Logik: HOLD bleibt liegen. Systemkapital = Broker Cash + Einstandswerte offener Positionen. "
-        "SAT Zielkapital entspricht 5 % des Systemkapitals. Ist bereits eine SAT-Position offen, wird kein zusätzlicher SAT-Cash reserviert."
+        "SAT Zielkapital entspricht 10 % des Systemkapitals: 5 % SATELLITE_A und 5 % SATELLITE_B. Offene Sleeves reservieren kein zusätzliches Cash."
     )
 
     st.divider()
@@ -780,7 +792,16 @@ with tab_dashboard:
 
     if not dashboard_positions.empty:
         core_latest_orders = load_latest_order_snapshot(supabase, "CORE")
-        sat_latest_orders = load_latest_order_snapshot(supabase, "SATELLITE")
+        sat_a_latest_orders = load_latest_order_snapshot(supabase, "SATELLITE_A")
+        sat_b_latest_orders = load_latest_order_snapshot(supabase, "SATELLITE_B")
+
+        sat_latest_orders = pd.concat(
+            [
+                sat_a_latest_orders,
+                sat_b_latest_orders,
+            ],
+            ignore_index=True,
+        )
 
         latest_orders = pd.concat(
             [
@@ -824,8 +845,16 @@ with tab_dashboard:
             dashboard_positions["system_type"] == "CORE"
         ]
 
+        sat_a_positions = dashboard_positions[
+            dashboard_positions["system_type"] == "SATELLITE_A"
+        ]
+
+        sat_b_positions = dashboard_positions[
+            dashboard_positions["system_type"] == "SATELLITE_B"
+        ]
+
         sat_positions = dashboard_positions[
-            dashboard_positions["system_type"] == "SATELLITE"
+            dashboard_positions["system_type"].isin(SATELLITE_SYSTEMS)
         ]
 
         st.markdown("### CORE Portfolio")
@@ -852,10 +881,10 @@ with tab_dashboard:
         else:
             st.info("Keine CORE Positionen.")
 
-        st.markdown("### SATELLITE Portfolio")
+        st.markdown("### SATELLITE_A Portfolio")
 
-        if not sat_positions.empty:
-            sat_portfolio_view = sat_positions[
+        if not sat_a_positions.empty:
+            sat_a_portfolio_view = sat_a_positions[
                 [
                     "signal",
                     "security",
@@ -867,14 +896,38 @@ with tab_dashboard:
             ]
 
             st.dataframe(
-                sat_portfolio_view.style.map(
+                sat_a_portfolio_view.style.map(
                     color_order,
                     subset=["signal"],
                 ),
                 use_container_width=True,
             )
         else:
-            st.info("Keine SATELLITE Positionen.")
+            st.info("Keine SATELLITE_A Position.")
+
+        st.markdown("### SATELLITE_B Portfolio")
+
+        if not sat_b_positions.empty:
+            sat_b_portfolio_view = sat_b_positions[
+                [
+                    "signal",
+                    "security",
+                    "OPEN_QTY",
+                    "LAST_PRICE",
+                    "ESTIMATED_POSITION_VALUE",
+                    "reason",
+                ]
+            ]
+
+            st.dataframe(
+                sat_b_portfolio_view.style.map(
+                    color_order,
+                    subset=["signal"],
+                ),
+                use_container_width=True,
+            )
+        else:
+            st.info("Keine SATELLITE_B Position.")
     else:
         st.info("Keine offenen Positionen.")
 
@@ -943,7 +996,7 @@ with tab_dashboard:
                 key=f"sat_order_{idx}",
                 disabled=not sat_rebalance_due,
             ):
-                prepare_trade_from_order(row, "SATELLITE")
+                prepare_trade_from_order(row, row["system_type"])
                 st.success("Trade vorbereitet. Bitte in den Trades-Tab wechseln.")
     else:
         st.info("Keine aktiven SATELLITE Orders.")
@@ -960,8 +1013,12 @@ with tab_dashboard:
         load_latest_momentum_snapshot(supabase, "CORE")
     )
 
-    sat_snapshot = enrich_snapshot(
-        load_latest_momentum_snapshot(supabase, "SATELLITE")
+    sat_a_snapshot = enrich_snapshot(
+        load_latest_momentum_snapshot(supabase, "SATELLITE_A")
+    )
+
+    sat_b_snapshot = enrich_snapshot(
+        load_latest_momentum_snapshot(supabase, "SATELLITE_B")
     )
 
     st.markdown("### CORE Zielportfolio")
@@ -989,9 +1046,9 @@ with tab_dashboard:
     else:
         st.info("Keine CORE Snapshots vorhanden.")
 
-    st.markdown("### SATELLITE Zielportfolio")
+    st.markdown("### SATELLITE_A Zielportfolio")
 
-    if not sat_snapshot.empty:
+    if not sat_a_snapshot.empty:
         display_cols = [
             "rank",
             "ticker",
@@ -1004,15 +1061,40 @@ with tab_dashboard:
 
         display_cols = [
             col for col in display_cols
-            if col in sat_snapshot.columns
+            if col in sat_a_snapshot.columns
         ]
 
         st.dataframe(
-            sat_snapshot.sort_values("rank")[display_cols],
+            sat_a_snapshot.sort_values("rank")[display_cols],
             use_container_width=True,
         )
     else:
-        st.info("Keine SATELLITE Snapshots vorhanden.")
+        st.info("Keine SATELLITE_A Snapshots vorhanden.")
+
+    st.markdown("### SATELLITE_B Zielportfolio")
+
+    if not sat_b_snapshot.empty:
+        display_cols = [
+            "rank",
+            "ticker",
+            "company_name",
+            "isin",
+            "score",
+            "latest_price",
+            "target_leverage",
+        ]
+
+        display_cols = [
+            col for col in display_cols
+            if col in sat_b_snapshot.columns
+        ]
+
+        st.dataframe(
+            sat_b_snapshot.sort_values("rank")[display_cols],
+            use_container_width=True,
+        )
+    else:
+        st.info("Keine SATELLITE_B Snapshots vorhanden.")
 
 
 # ===================================================
@@ -1055,11 +1137,7 @@ with tab_portfolio:
 
         cash_system_type = st.selectbox(
             "System",
-            [
-                "GESAMT",
-                "CORE",
-                "SATELLITE",
-            ],
+            ["GESAMT"] + SYSTEM_TYPES,
         )
 
         amount = st.number_input("Betrag", step=0.01)
@@ -1196,9 +1274,11 @@ with tab_trades:
         
         trade_system_type = st.selectbox(
             "System",
-            ["CORE", "SATELLITE"],
-            index=["CORE", "SATELLITE"].index(
+            SYSTEM_TYPES,
+            index=SYSTEM_TYPES.index(
                 prefill.get("system_type", "CORE")
+                if prefill.get("system_type", "CORE") in SYSTEM_TYPES
+                else "CORE"
             ),
         )
 
@@ -1558,9 +1638,11 @@ with tab_trades:
 
                     edit_system_type = st.selectbox(
                         "System",
-                        ["CORE", "SATELLITE"],
-                        index=["CORE", "SATELLITE"].index(
+                        SYSTEM_TYPES,
+                        index=SYSTEM_TYPES.index(
                             selected_trade.get("system_type", "CORE")
+                            if selected_trade.get("system_type", "CORE") in SYSTEM_TYPES
+                            else "CORE"
                         ),
                         key="edit_system_type",
                     )
@@ -2139,10 +2221,17 @@ with tab_data:
         )
     )
 
-    latest_sat_ranking = enrich_snapshot(
+    latest_sat_a_ranking = enrich_snapshot(
         load_latest_momentum_snapshot(
             supabase,
-            "SATELLITE",
+            "SATELLITE_A",
+        )
+    )
+
+    latest_sat_b_ranking = enrich_snapshot(
+        load_latest_momentum_snapshot(
+            supabase,
+            "SATELLITE_B",
         )
     )
 
@@ -2199,16 +2288,16 @@ with tab_data:
     else:
         st.info("Keine CORE Rangliste vorhanden.")
 
-    st.markdown("### SATELLITE Rangliste")
+    st.markdown("### SATELLITE_A Rangliste")
 
-    if not latest_sat_ranking.empty:
+    if not latest_sat_a_ranking.empty:
 
-        sat_ranking_view = latest_sat_ranking.sort_values(
+        sat_a_ranking_view = latest_sat_a_ranking.sort_values(
             "rank",
             ascending=True,
         ).copy()
 
-        sat_ranking_view = sat_ranking_view.rename(
+        sat_a_ranking_view = sat_a_ranking_view.rename(
             columns={
                 "score": "rank_score",
             }
@@ -2224,9 +2313,9 @@ with tab_data:
             "target_leverage",
         ]
 
-        sat_display_cols = [
+        sat_a_display_cols = [
             col for col in sat_display_cols
-            if col in sat_ranking_view.columns
+            if col in sat_a_ranking_view.columns
         ]
 
         st.caption(
@@ -2234,13 +2323,46 @@ with tab_data:
         )
 
         st.dataframe(
-            sat_ranking_view[sat_display_cols],
+            sat_a_ranking_view[sat_a_display_cols],
             use_container_width=True,
             hide_index=True,
         )
 
     else:
-        st.info("Keine SATELLITE Rangliste vorhanden.")
+        st.info("Keine SATELLITE_A Rangliste vorhanden.")
+
+    st.markdown("### SATELLITE_B Rangliste")
+
+    if not latest_sat_b_ranking.empty:
+
+        sat_b_ranking_view = latest_sat_b_ranking.sort_values(
+            "rank",
+            ascending=True,
+        ).copy()
+
+        sat_b_ranking_view = sat_b_ranking_view.rename(
+            columns={
+                "score": "rank_score",
+            }
+        )
+
+        sat_b_display_cols = [
+            col for col in sat_display_cols
+            if col in sat_b_ranking_view.columns
+        ]
+
+        st.caption(
+            "Rank Score: gewichteter Rang-Score. Kleiner ist besser."
+        )
+
+        st.dataframe(
+            sat_b_ranking_view[sat_b_display_cols],
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    else:
+        st.info("Keine SATELLITE_B Rangliste vorhanden.")
 
     st.divider()
 
@@ -2379,7 +2501,7 @@ with tab_admin:
         ]
 
         sat_state = rebalance_df[
-            rebalance_df["system_type"] == "SATELLITE"
+            rebalance_df["system_type"] == "SATELLITE_A"
         ]
 
         col1, col2 = st.columns(2)
@@ -2409,24 +2531,24 @@ with tab_admin:
                 sat_rebalance_due = today >= next_sat_date
 
                 col2.metric(
-                    "Nächstes SATELLITE Rebalance",
+                    "Nächstes SAT Rebalance",
                     next_sat_date.strftime("%d.%m.%Y"),
                 )
             else:
                 col2.metric(
-                    "Nächstes SATELLITE Rebalance",
+                    "Nächstes SAT Rebalance",
                     "Noch nicht gesetzt",
                 )
 
     st.write("CORE Rebalance heute aktiv:", core_rebalance_due)
-    st.write("SATELLITE Rebalance heute aktiv:", sat_rebalance_due)
+    st.write("SAT Rebalance heute aktiv:", sat_rebalance_due)
 
     st.subheader("Rebalance als ausgeführt speichern")
 
     with st.form("rebalance_execution_form"):
         execution_system = st.selectbox(
             "Ausgeführtes System",
-            ["CORE", "SATELLITE"],
+            SYSTEM_TYPES,
         )
 
         execution_date = st.date_input(
