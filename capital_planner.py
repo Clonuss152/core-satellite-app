@@ -1,7 +1,10 @@
 import pandas as pd
 
-
-SAT_TARGET_WEIGHT = 0.05
+from config import (
+    CORE_TARGET_WEIGHT,
+    SATELLITE_A_WEIGHT,
+    SATELLITE_B_WEIGHT,
+)
 
 
 def get_latest_broker_cash(cash_state_df):
@@ -104,7 +107,8 @@ def calculate_capital_plan(
     )
 
     total_open_cost = 0.0
-    satellite_open_cost = 0.0
+    satellite_a_open_cost = 0.0
+    satellite_b_open_cost = 0.0
 
     if not open_costs.empty:
 
@@ -112,33 +116,70 @@ def calculate_capital_plan(
             open_costs["OPEN_COST"].sum()
         )
 
-        satellite_open_cost = float(
+        satellite_a_open_cost = float(
             open_costs.loc[
-                open_costs["system_type"] == "SATELLITE",
+                open_costs["system_type"] == "SATELLITE_A",
                 "OPEN_COST"
             ].sum()
         )
 
-    # Realisiertes operatives Systemkapital:
-    # Broker Cash + Einstandswerte offener Positionen.
-    # Unrealized Gewinne werden bewusst nicht berücksichtigt.
+        satellite_b_open_cost = float(
+            open_costs.loc[
+                open_costs["system_type"] == "SATELLITE_B",
+                "OPEN_COST"
+            ].sum()
+        )
+
+    satellite_open_cost = (
+        satellite_a_open_cost
+        + satellite_b_open_cost
+    )
+
     system_capital = broker_cash + total_open_cost
 
-    # SAT-Zielkapital entspricht immer 5 % des realisierten Systemkapitals.
-    satellite_target_capital = system_capital * SAT_TARGET_WEIGHT
+    satellite_a_target_capital = (
+        system_capital * SATELLITE_A_WEIGHT
+    )
 
-    satellite_is_open = satellite_open_cost > 0
+    satellite_b_target_capital = (
+        system_capital * SATELLITE_B_WEIGHT
+    )
 
-    # Wenn eine SAT-Position offen ist, wird kein zusätzlicher SAT-Cash reserviert.
-    # Wenn keine SAT-Position offen ist, wird beim nächsten SAT-Kauf bis zu 5 %
-    # des Systemkapitals investiert, maximal jedoch verfügbarer Broker Cash.
-    if satellite_is_open:
-        satellite_reserve = 0.0
-    else:
-        satellite_reserve = min(
+    satellite_target_capital = (
+        satellite_a_target_capital
+        + satellite_b_target_capital
+    )
+
+    satellite_a_is_open = satellite_a_open_cost > 0
+    satellite_b_is_open = satellite_b_open_cost > 0
+
+    satellite_a_reserve = (
+        0.0
+        if satellite_a_is_open
+        else min(
             broker_cash,
-            satellite_target_capital
+            satellite_a_target_capital
         )
+    )
+
+    cash_after_a_reserve = max(
+        0.0,
+        broker_cash - satellite_a_reserve
+    )
+
+    satellite_b_reserve = (
+        0.0
+        if satellite_b_is_open
+        else min(
+            cash_after_a_reserve,
+            satellite_b_target_capital
+        )
+    )
+
+    satellite_reserve = (
+        satellite_a_reserve
+        + satellite_b_reserve
+    )
 
     core_available_cash = max(
         0.0,
@@ -173,35 +214,72 @@ def calculate_capital_plan(
 
         sat_orders["suggested_amount"] = 0.0
 
-        sat_buy_count = len(
-            sat_orders[
-                sat_orders["action"] == "BUY"
-            ]
+        a_buy_mask = (
+            (sat_orders["system_type"] == "SATELLITE_A")
+            & (sat_orders["action"] == "BUY")
         )
 
-        if (
-            sat_buy_count > 0
-            and not satellite_is_open
-        ):
+        b_buy_mask = (
+            (sat_orders["system_type"] == "SATELLITE_B")
+            & (sat_orders["action"] == "BUY")
+        )
 
+        if a_buy_mask.any():
             sat_orders.loc[
-                sat_orders["action"] == "BUY",
+                a_buy_mask,
                 "suggested_amount"
-            ] = satellite_reserve
+            ] = satellite_a_reserve
+
+        if b_buy_mask.any():
+            sat_orders.loc[
+                b_buy_mask,
+                "suggested_amount"
+            ] = satellite_b_reserve
+
+    satellite_a_gap = (
+        satellite_a_open_cost
+        - satellite_a_target_capital
+    )
+
+    satellite_b_gap = (
+        satellite_b_open_cost
+        - satellite_b_target_capital
+    )
+
     satellite_gap = (
         satellite_open_cost
         - satellite_target_capital
     )
+
     metrics = {
         "broker_cash": broker_cash,
         "system_capital": system_capital,
+
+        "core_target_weight": CORE_TARGET_WEIGHT,
+
         "satellite_target_capital": satellite_target_capital,
         "satellite_limit": satellite_target_capital,
         "satellite_open_cost": satellite_open_cost,
         "satellite_gap": satellite_gap,
         "satellite_reserve": satellite_reserve,
+
+        "satellite_a_target_capital": satellite_a_target_capital,
+        "satellite_a_open_cost": satellite_a_open_cost,
+        "satellite_a_gap": satellite_a_gap,
+        "satellite_a_reserve": satellite_a_reserve,
+        "satellite_a_is_open": satellite_a_is_open,
+
+        "satellite_b_target_capital": satellite_b_target_capital,
+        "satellite_b_open_cost": satellite_b_open_cost,
+        "satellite_b_gap": satellite_b_gap,
+        "satellite_b_reserve": satellite_b_reserve,
+        "satellite_b_is_open": satellite_b_is_open,
+
         "core_available_cash": core_available_cash,
-        "satellite_is_open": satellite_is_open,
+        "satellite_is_open": (
+            satellite_a_is_open
+            or satellite_b_is_open
+        ),
     }
 
     return metrics, core_orders, sat_orders
