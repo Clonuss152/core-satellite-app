@@ -1169,7 +1169,7 @@ with tab_portfolio:
 
     if not open_positions.empty:
         st.dataframe(open_positions, use_container_width=True)
-                st.subheader("Livewerte erfassen")
+        st.subheader("Livewerte erfassen")
 
         for idx, row in open_positions.iterrows():
 
