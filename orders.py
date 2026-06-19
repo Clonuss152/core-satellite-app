@@ -192,6 +192,7 @@ def generate_satellite_orders(
                 "action": "HOLD",
                 "ticker": sat_a_current,
                 "reason": "Innerhalb Sell Buffer",
+                "target_leverage": 10.0,
                 "rank": current_rank,
                 **meta
             })
