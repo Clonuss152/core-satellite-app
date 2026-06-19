@@ -6,7 +6,7 @@ from supabase import create_client
 from data_loader import (
     get_latest_price_dates,
     download_price_history,
-    transform_price_data
+    transform_price_data,
 )
 
 from config import (
@@ -15,19 +15,86 @@ from config import (
     STRONG_CORE_WEIGHTS,
     NORMAL_CORE_WEIGHTS,
     WEAK_CORE_WEIGHTS,
-    SAT_WEIGHTS
+    SAT_WEIGHTS,
+    SATELLITE_A_TARGET_LEVERAGE,
+    SATELLITE_B_TARGET_LEVERAGE,
+    SATELLITE_A_SELL_BUFFER,
+    SATELLITE_B_SELL_BUFFER,
+    WEAK_FLAT_SATELLITES,
 )
 
 from momentum import calculate_momentum
 from regime import get_regime
-from orders import generate_core_orders, generate_sat_orders
+from orders import generate_core_orders, generate_satellite_orders
+from utils import get_underlying_info
 
 from snapshot import (
     clear_today_snapshots,
     save_regime_snapshot,
     save_momentum_snapshot,
-    save_order_snapshot
+    save_order_snapshot,
 )
+
+
+def generate_weak_flat_satellite_orders(
+    open_positions,
+    underlying_df,
+):
+    orders = []
+
+    if open_positions.empty:
+        return pd.DataFrame()
+
+    satellite_positions = open_positions[
+        open_positions["system_type"].isin(
+            [
+                "SATELLITE_A",
+                "SATELLITE_B",
+            ]
+        )
+    ]
+
+    for _, row in satellite_positions.iterrows():
+
+        ticker = row["underlying_ticker"]
+        system_type = row["system_type"]
+
+        meta = get_underlying_info(
+            ticker,
+            underlying_df,
+        )
+
+        orders.append(
+            {
+                "system_type": system_type,
+                "system": system_type,
+                "action": "SELL",
+                "ticker": ticker,
+                "company_name": meta["company_name"],
+                "isin": meta["isin"],
+                "wkn": meta["wkn"],
+                "exchange": meta["exchange"],
+                "currency": meta["currency"],
+                "reason": "WEAK Regime - Satellite flat",
+            }
+        )
+
+    return pd.DataFrame(orders)
+
+
+def ensure_snapshot_system_column(orders_df):
+    if orders_df.empty:
+        return orders_df
+
+    orders_df = orders_df.copy()
+
+    if "system" not in orders_df.columns:
+        orders_df["system"] = orders_df["system_type"]
+
+    if "system_type" not in orders_df.columns:
+        orders_df["system_type"] = orders_df["system"]
+
+    return orders_df
 
 
 def run_daily_update(incremental=True):
@@ -37,7 +104,7 @@ def run_daily_update(incremental=True):
 
     supabase = create_client(
         secrets["SUPABASE_URL"],
-        secrets["SUPABASE_KEY"]
+        secrets["SUPABASE_KEY"],
     )
 
     underlying_result = supabase.table("underlyings").select("*").execute()
@@ -53,6 +120,7 @@ def run_daily_update(incremental=True):
     latest_dates = get_latest_price_dates(
         supabase
     )
+
     for ticker in tickers:
         ticker = str(ticker).strip()
 
@@ -62,9 +130,13 @@ def run_daily_update(incremental=True):
             data = download_price_history(
                 latest_dates,
                 ticker,
-                incremental=incremental 
+                incremental=incremental,
             )
-            records = transform_price_data(ticker, data)
+
+            records = transform_price_data(
+                ticker,
+                data,
+            )
 
             if not records:
                 failed_tickers.append(ticker)
@@ -72,7 +144,7 @@ def run_daily_update(incremental=True):
 
             supabase.table("price_history").upsert(
                 records,
-                on_conflict="ticker,price_date"
+                on_conflict="ticker,price_date",
             ).execute()
 
             total_rows += len(records)
@@ -116,12 +188,17 @@ def run_daily_update(incremental=True):
 
     price_df["price_date"] = pd.to_datetime(price_df["price_date"])
     price_df["adj_close"] = pd.to_numeric(price_df["adj_close"])
-    price_df = price_df.sort_values(["ticker", "price_date"])
+    price_df = price_df.sort_values(
+        [
+            "ticker",
+            "price_date",
+        ]
+    )
 
     pivot_close = price_df.pivot(
         index="price_date",
         columns="ticker",
-        values="adj_close"
+        values="adj_close",
     )
 
     pivot_close = pivot_close.sort_index()
@@ -130,23 +207,38 @@ def run_daily_update(incremental=True):
     price_df = pivot_close.reset_index().melt(
         id_vars="price_date",
         var_name="ticker",
-        value_name="adj_close"
+        value_name="adj_close",
     )
 
     price_df = price_df.dropna()
 
     core_tickers = underlying_df.loc[
-        underlying_df["strategy_role"].isin(["CORE", "BOTH"]),
-        "ticker"
+        underlying_df["strategy_role"].isin(
+            [
+                "CORE",
+                "BOTH",
+            ]
+        ),
+        "ticker",
     ].tolist()
 
     sat_tickers = underlying_df.loc[
-        underlying_df["strategy_role"].isin(["SATELLITE", "BOTH"]),
-        "ticker"
+        underlying_df["strategy_role"].isin(
+            [
+                "SATELLITE",
+                "BOTH",
+            ]
+        ),
+        "ticker",
     ].tolist()
 
-    core_prices = price_df[price_df["ticker"].isin(core_tickers)]
-    sat_prices = price_df[price_df["ticker"].isin(sat_tickers)]
+    core_prices = price_df[
+        price_df["ticker"].isin(core_tickers)
+    ]
+
+    sat_prices = price_df[
+        price_df["ticker"].isin(sat_tickers)
+    ]
 
     regime, top10_mom = get_regime(core_prices)
 
@@ -171,40 +263,58 @@ def run_daily_update(incremental=True):
     core_rank = calculate_momentum(
         core_prices,
         CORE_LOOKBACKS,
-        core_weights
+        core_weights,
     )
 
     sat_rank = calculate_momentum(
         sat_prices,
         SAT_LOOKBACKS,
-        SAT_WEIGHTS
+        SAT_WEIGHTS,
     )
 
     core_target = core_rank.head(core_size).copy()
-    core_target["target_position"] = range(1, len(core_target) + 1)
-    core_target["target_leverage"] = core_leverage[:len(core_target)]
+    core_target["target_position"] = range(
+        1,
+        len(core_target) + 1,
+    )
+    core_target["target_leverage"] = core_leverage[
+        :len(core_target)
+    ]
     core_target["sell_buffer"] = core_sell_buffer
-
-    sat_target = sat_rank.head(1).copy()
-    sat_target["target_position"] = 1
-    sat_target["target_leverage"] = 10.0
-    sat_target["sell_buffer"] = 6
 
     open_positions = pd.DataFrame()
 
     if not trade_df.empty:
         grouped = trade_df.groupby(
-            ["system_type", "underlying_ticker", "turbo_wkn"],
-            dropna=False
+            [
+                "system_type",
+                "underlying_ticker",
+                "turbo_wkn",
+            ],
+            dropna=False,
         ).apply(
-            lambda x: pd.Series({
-                "BUY_QTY": x.loc[x["action"] == "BUY", "quantity"].sum(),
-                "SELL_QTY": x.loc[x["action"] == "SELL", "quantity"].sum()
-            })
+            lambda x: pd.Series(
+                {
+                    "BUY_QTY": x.loc[
+                        x["action"] == "BUY",
+                        "quantity",
+                    ].sum(),
+                    "SELL_QTY": x.loc[
+                        x["action"] == "SELL",
+                        "quantity",
+                    ].sum(),
+                }
+            )
         ).reset_index()
 
-        grouped["OPEN_QTY"] = grouped["BUY_QTY"] - grouped["SELL_QTY"]
-        open_positions = grouped[grouped["OPEN_QTY"] > 0].copy()
+        grouped["OPEN_QTY"] = (
+            grouped["BUY_QTY"]
+            - grouped["SELL_QTY"]
+        )
+
+        open_positions = grouped[
+            grouped["OPEN_QTY"] > 0
+        ].copy()
 
     core_orders = generate_core_orders(
         core_target=core_target,
@@ -212,14 +322,31 @@ def run_daily_update(incremental=True):
         open_positions=open_positions,
         df=underlying_df,
         core_size=core_size,
-        core_sell_buffer=core_sell_buffer
+        core_sell_buffer=core_sell_buffer,
     )
 
-    sat_orders = generate_sat_orders(
-        sat_target=sat_target,
-        sat_rank=sat_rank,
-        open_positions=open_positions,
-        df=underlying_df
+    if (
+        regime == "WEAK"
+        and WEAK_FLAT_SATELLITES
+    ):
+        sat_orders = generate_weak_flat_satellite_orders(
+            open_positions=open_positions,
+            underlying_df=underlying_df,
+        )
+
+    else:
+        sat_orders = generate_satellite_orders(
+            sat_rank=sat_rank,
+            open_positions=open_positions,
+            df=underlying_df,
+        )
+
+    core_orders = ensure_snapshot_system_column(
+        core_orders
+    )
+
+    sat_orders = ensure_snapshot_system_column(
+        sat_orders
     )
 
     clear_today_snapshots(supabase)
@@ -227,7 +354,7 @@ def run_daily_update(incremental=True):
     save_regime_snapshot(
         supabase,
         regime,
-        top10_mom
+        top10_mom,
     )
 
     core_rank_snapshot = core_rank.copy()
@@ -237,7 +364,7 @@ def run_daily_update(incremental=True):
     core_target_leverage_map = dict(
         zip(
             core_target["ticker"],
-            core_target["target_leverage"]
+            core_target["target_leverage"],
         )
     )
 
@@ -246,41 +373,78 @@ def run_daily_update(incremental=True):
         .map(core_target_leverage_map)
     )
 
-    sat_rank_snapshot = sat_rank.copy()
-    sat_rank_snapshot["target_leverage"] = None
-    sat_rank_snapshot["sell_buffer"] = 6
+    sat_rank_snapshot_a = sat_rank.copy()
+    sat_rank_snapshot_a["target_leverage"] = None
+    sat_rank_snapshot_a["sell_buffer"] = SATELLITE_A_SELL_BUFFER
 
-    if not sat_target.empty:
-        sat_rank_snapshot.loc[
-            sat_rank_snapshot["ticker"] == sat_target.iloc[0]["ticker"],
-            "target_leverage"
-        ] = 10.0
+    sat_rank_snapshot_b = sat_rank.copy()
+    sat_rank_snapshot_b["target_leverage"] = None
+    sat_rank_snapshot_b["sell_buffer"] = SATELLITE_B_SELL_BUFFER
+
+    if not sat_rank.empty and regime != "WEAK":
+
+        a_ticker = sat_rank.sort_values(
+            "rank"
+        ).iloc[0]["ticker"]
+
+        b_ticker = None
+
+        for ticker in sat_rank.sort_values("rank")["ticker"].tolist():
+            if ticker != a_ticker:
+                b_ticker = ticker
+                break
+
+        sat_rank_snapshot_a.loc[
+            sat_rank_snapshot_a["ticker"] == a_ticker,
+            "target_leverage",
+        ] = SATELLITE_A_TARGET_LEVERAGE
+
+        if b_ticker is not None:
+            sat_rank_snapshot_b.loc[
+                sat_rank_snapshot_b["ticker"] == b_ticker,
+                "target_leverage",
+            ] = SATELLITE_B_TARGET_LEVERAGE
 
     save_momentum_snapshot(
         supabase,
         "CORE",
         core_rank_snapshot,
         [],
-        core_sell_buffer
+        core_sell_buffer,
     )
 
     save_momentum_snapshot(
         supabase,
-        "SATELLITE",
-        sat_rank_snapshot,
+        "SATELLITE_A",
+        sat_rank_snapshot_a,
         [],
-        6
+        SATELLITE_A_SELL_BUFFER,
     )
 
-    save_order_snapshot(supabase, core_orders)
-    save_order_snapshot(supabase, sat_orders)
+    save_momentum_snapshot(
+        supabase,
+        "SATELLITE_B",
+        sat_rank_snapshot_b,
+        [],
+        SATELLITE_B_SELL_BUFFER,
+    )
+
+    save_order_snapshot(
+        supabase,
+        core_orders,
+    )
+
+    save_order_snapshot(
+        supabase,
+        sat_orders,
+    )
 
     supabase.table("system_status").upsert(
         {
             "status_key": "last_daily_update",
-            "status_value": datetime.utcnow().isoformat()
+            "status_value": datetime.utcnow().isoformat(),
         },
-        on_conflict="status_key"
+        on_conflict="status_key",
     ).execute()
 
     print("Snapshots gespeichert.")
