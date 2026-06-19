@@ -273,7 +273,9 @@ cash_df = load_table("cash_transactions")
 cash_state_df = load_table("cash_state")
 rebalance_df = load_table("rebalance_state")
 status_df = load_table("system_status")
-
+position_live_values_df = load_table(
+    "position_live_values"
+)
 # backward-compatible alias for older code sections
 df = underlyings_df
 
