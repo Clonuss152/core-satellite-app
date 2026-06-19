@@ -1,5 +1,7 @@
 from datetime import date
 import pandas as pd
+
+
 def clear_today_snapshots(supabase):
 
     snapshot_date = str(date.today())
@@ -18,6 +20,7 @@ def clear_today_snapshots(supabase):
         "snapshot_date",
         snapshot_date
     ).execute()
+
 
 def save_regime_snapshot(
     supabase,
@@ -93,6 +96,7 @@ def save_momentum_snapshot(
             "momentum_snapshot"
         ).insert(rows).execute()
 
+
 def save_order_snapshot(supabase, orders_df):
 
     if orders_df.empty:
@@ -103,8 +107,18 @@ def save_order_snapshot(supabase, orders_df):
 
     for _, row in orders_df.iterrows():
 
+        system_type = row.get(
+            "system_type",
+            row.get("system", None)
+        )
+
         target_leverage = row.get("target_leverage", None)
         rank = row.get("rank", None)
+
+        if pd.isna(system_type):
+            system_type = None
+        else:
+            system_type = str(system_type)
 
         if pd.isna(target_leverage):
             target_leverage = None
@@ -118,7 +132,7 @@ def save_order_snapshot(supabase, orders_df):
 
         rows.append({
             "snapshot_date": snapshot_date,
-            "system_type": str(row.get("system")),
+            "system_type": system_type,
             "action": str(row.get("action")),
             "ticker": str(row.get("ticker")),
             "reason": str(row.get("reason")),
