@@ -1169,7 +1169,121 @@ with tab_portfolio:
 
     if not open_positions.empty:
         st.dataframe(open_positions, use_container_width=True)
+                st.subheader("Livewerte erfassen")
 
+        for idx, row in open_positions.iterrows():
+
+            with st.expander(
+                f"{row['system_type']} | "
+                f"{row['underlying_ticker']} | "
+                f"{row['turbo_wkn']}"
+            ):
+
+                last_live = pd.DataFrame()
+
+                if not position_live_values_df.empty:
+
+                    last_live = position_live_values_df[
+                        (position_live_values_df["system_type"] == row["system_type"])
+                        &
+                        (
+                            position_live_values_df["underlying_ticker"]
+                            == row["underlying_ticker"]
+                        )
+                        &
+                        (
+                            position_live_values_df["turbo_wkn"]
+                            == row["turbo_wkn"]
+                        )
+                    ]
+
+                    if not last_live.empty:
+                        last_live = last_live.sort_values(
+                            "valuation_date",
+                            ascending=False
+                        )
+
+                last_price = None
+                last_date = None
+
+                if not last_live.empty:
+                    last_price = last_live.iloc[0]["live_product_price"]
+                    last_date = last_live.iloc[0]["valuation_date"]
+
+                st.write(
+                    f"Offene Stückzahl: {row['OPEN_QTY']}"
+                )
+
+                if last_price:
+                    st.info(
+                        f"Letzter Livekurs: "
+                        f"{last_price} "
+                        f"vom {last_date}"
+                    )
+
+                with st.form(
+                    f"live_value_form_{idx}"
+                ):
+
+                    valuation_date = st.date_input(
+                        "Bewertungsdatum",
+                        value=today,
+                        format="DD.MM.YYYY",
+                        key=f"valuation_date_{idx}"
+                    )
+
+                    live_product_price = st.number_input(
+                        "Aktueller Produktkurs",
+                        step=0.01,
+                        min_value=0.0,
+                        key=f"live_price_{idx}"
+                    )
+
+                    submit_live_value = st.form_submit_button(
+                        "Livewert speichern"
+                    )
+
+                    if submit_live_value:
+
+                        position_value = (
+                            float(row["OPEN_QTY"])
+                            *
+                            float(live_product_price)
+                        )
+
+                        supabase.table(
+                            "position_live_values"
+                        ).insert(
+                            {
+                                "valuation_date": str(
+                                    valuation_date
+                                ),
+                                "system_type": row["system_type"],
+                                "underlying_ticker": row["underlying_ticker"],
+                                "turbo_wkn": row["turbo_wkn"],
+                                "turbo_isin": row.get(
+                                    "turbo_isin",
+                                    ""
+                                ),
+                                "open_qty": float(
+                                    row["OPEN_QTY"]
+                                ),
+                                "live_product_price": float(
+                                    live_product_price
+                                ),
+                                "live_position_value": float(
+                                    position_value
+                                ),
+                                "source": "MANUAL",
+                            }
+                        ).execute()
+
+                        st.success(
+                            f"Livewert gespeichert: "
+                            f"{position_value:,.2f} €"
+                        )
+
+                        st.rerun()
         st.subheader("Position verkaufen")
 
         for idx, row in open_positions.iterrows():
