@@ -272,12 +272,17 @@ def calculate_capital_plan(
             required_live_value_date=required_live_value_date,
         )
 
-        system_capital = (
-            broker_cash
-            + live_value_result["total_open_live_value"]
-        )
+        if live_value_result["live_values_complete"]:
+            system_capital = (
+                broker_cash
+                + live_value_result["total_open_live_value"]
+            )
 
-        capital_basis = "MANUAL_LIVE_VALUES"
+            capital_basis = "MANUAL_LIVE_VALUES"
+
+        else:
+            system_capital = broker_cash + total_open_cost
+            capital_basis = "OPEN_COSTS_FALLBACK_LIVE_VALUES_INCOMPLETE"
 
     else:
         system_capital = broker_cash + total_open_cost
