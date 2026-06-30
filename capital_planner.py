@@ -442,6 +442,9 @@ def calculate_capital_plan(
     if not live_value_result["live_values_complete"]:
         buy_block_reason = "LIVE_VALUES_STALE"
 
+    elif sell_orders_present:
+        buy_block_reason = "SELL_ORDERS_PENDING"
+
     elif broker_cash <= 0:
         buy_block_reason = "INSUFFICIENT_BROKER_CASH"
         
