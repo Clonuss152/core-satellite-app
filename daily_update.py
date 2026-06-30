@@ -327,6 +327,37 @@ def run_daily_update(incremental=True):
             grouped["OPEN_QTY"] > 0
         ].copy()
 
+    required_live_value_date = date.today()
+
+    live_value_status = check_live_value_status(
+        open_positions,
+        live_values_df,
+        required_live_value_date,
+    )
+
+    buy_orders_enabled = live_value_status.get(
+        "buy_orders_enabled",
+        False,
+    )
+
+    print(
+        "BUY Orders enabled:",
+        buy_orders_enabled,
+    )
+
+    if not buy_orders_enabled:
+        print(
+            "BUY Orders gesperrt wegen fehlender/veralteter Livewerte."
+        )
+        print(
+            "Missing:",
+            live_value_status.get("missing", []),
+        )
+        print(
+            "Stale:",
+            live_value_status.get("stale", []),
+        )
+
     core_orders = generate_core_orders(
         core_target=core_target,
         core_rank=core_rank,
