@@ -1323,7 +1323,7 @@ with tab_portfolio:
 
                     valuation_date = st.date_input(
                         "Bewertungsdatum",
-                        value=today,
+                        value=latest_daily_update_date,
                         format="DD.MM.YYYY",
                         key=f"valuation_date_{idx}"
                     )
