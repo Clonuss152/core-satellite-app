@@ -940,7 +940,7 @@ with tab_dashboard:
             },
             {
                 "Status": "BUY Sperrgrund",
-                "Wert": buy_block_reason if buy_block_reason else "-",
+                "Wert": buy_block_reason_text if buy_block_reason else "-",
             },
             {
                 "Status": "Open Live Value",
