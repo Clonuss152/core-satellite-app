@@ -806,6 +806,8 @@ with tab_dashboard:
         cash_state_df=cash_state_df,
         core_orders=active_core_orders,
         sat_orders=active_sat_orders,
+        live_values_df=position_live_values_df,
+        required_live_value_date=latest_daily_update_date,
     )
 
     # -------------------------------------------
