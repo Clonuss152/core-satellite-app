@@ -45,7 +45,71 @@ def load_table(table_name):
     result = supabase.table(table_name).select("*").execute()
     return pd.DataFrame(result.data)
 
+def check_live_value_status(
+    open_positions_df,
+    live_values_df,
+    required_date,
+):
+    """
+    Prüft, ob für jede offene Position
+    ein aktueller Livewert vorhanden ist.
+    """
 
+    missing = []
+    stale = []
+
+    if open_positions_df.empty:
+        return {
+            "complete": True,
+            "missing": [],
+            "stale": [],
+        }
+
+    for _, pos in open_positions_df.iterrows():
+
+        match = live_values_df[
+            (live_values_df["system_type"] == pos["system_type"])
+            &
+            (
+                live_values_df["underlying_ticker"]
+                == pos["underlying_ticker"]
+            )
+        ]
+
+        if match.empty:
+
+            missing.append(
+                f"{pos['system_type']} | "
+                f"{pos['underlying_ticker']}"
+            )
+
+            continue
+
+        latest = (
+            match
+            .sort_values(
+                "valuation_date",
+                ascending=False
+            )
+            .iloc[0]
+        )
+
+        if str(latest["valuation_date"]) != str(required_date):
+
+            stale.append(
+                f"{pos['system_type']} | "
+                f"{pos['underlying_ticker']} "
+                f"({latest['valuation_date']})"
+            )
+
+    return {
+        "complete": (
+            len(missing) == 0
+            and len(stale) == 0
+        ),
+        "missing": missing,
+        "stale": stale,
+    }
 
 def safe_value(value):
     if pd.isna(value):
