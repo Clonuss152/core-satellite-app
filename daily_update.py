@@ -393,6 +393,35 @@ def run_daily_update(incremental=True):
         sat_orders
     )
 
+    sell_orders_present = False
+
+    if not core_orders.empty:
+        sell_orders_present = (
+            sell_orders_present
+            or (core_orders["action"] == "SELL").any()
+        )
+
+    if not sat_orders.empty:
+        sell_orders_present = (
+            sell_orders_present
+            or (sat_orders["action"] == "SELL").any()
+        )
+
+    if sell_orders_present:
+        print(
+            "BUY Orders gesperrt: SELL-Ausführung und Broker-Cash-Update erforderlich."
+        )
+
+        if not core_orders.empty:
+            core_orders = core_orders[
+                core_orders["action"] != "BUY"
+            ].copy()
+
+        if not sat_orders.empty:
+            sat_orders = sat_orders[
+                sat_orders["action"] != "BUY"
+            ].copy()
+
     clear_today_snapshots(supabase)
 
     save_regime_snapshot(
