@@ -810,6 +810,18 @@ with tab_dashboard:
         required_live_value_date=latest_daily_update_date,
     )
 
+    if not capital_metrics.get("buy_orders_enabled", True):
+
+        if not planned_core_orders.empty:
+            planned_core_orders = planned_core_orders[
+                planned_core_orders["action"] != "BUY"
+            ].copy()
+
+        if not planned_sat_orders.empty:
+            planned_sat_orders = planned_sat_orders[
+                planned_sat_orders["action"] != "BUY"
+            ].copy()
+    
     # -------------------------------------------
     # Kapitalplanung + Cash-State Formular
     # -------------------------------------------
