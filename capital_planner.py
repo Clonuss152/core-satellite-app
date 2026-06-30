@@ -275,6 +275,29 @@ def calculate_capital_plan(
         cash_state_df
     )
 
+    latest_cash_update_date = get_latest_cash_update_date(
+        cash_state_df
+    )
+
+    latest_sell_trade_date = get_latest_sell_trade_date(
+        trade_df
+    )
+
+    cash_updated_after_latest_sell = True
+
+    if (
+        latest_sell_trade_date is not None
+        and latest_cash_update_date is not None
+        and latest_cash_update_date < latest_sell_trade_date
+    ):
+        cash_updated_after_latest_sell = False
+
+    if (
+        latest_sell_trade_date is not None
+        and latest_cash_update_date is None
+    ):
+        cash_updated_after_latest_sell = False
+
     open_costs = calculate_open_costs(
         trade_df
     )
