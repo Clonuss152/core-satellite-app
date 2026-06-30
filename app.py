@@ -875,6 +875,52 @@ with tab_dashboard:
         "CORE verfügbar",
         format_eur(capital_metrics.get("core_available_cash", 0.0)),
     )
+
+    status1, status2, status3, status4, status5 = st.columns(5)
+
+    capital_basis = capital_metrics.get("capital_basis", "-")
+    live_complete = capital_metrics.get("live_values_complete", False)
+    buy_enabled = capital_metrics.get("buy_orders_enabled", False)
+
+    status1.metric(
+        "Kapitalbasis",
+        capital_basis,
+    )
+
+    status2.metric(
+        "Livewerte vollständig",
+        "JA" if live_complete else "NEIN",
+    )
+
+    status3.metric(
+        "BUY Orders",
+        "AKTIV" if buy_enabled else "GESPERRT",
+    )
+
+    status4.metric(
+        "Open Live Value",
+        format_eur(
+            capital_metrics.get(
+                "total_open_live_value",
+                0.0,
+            )
+        ),
+    )
+
+    status5.metric(
+        "Open Cost",
+        format_eur(
+            capital_metrics.get(
+                "total_open_cost",
+                0.0,
+            )
+        ),
+    )
+
+    st.caption(
+        "Logik: Wenn alle Livewerte aktuell sind ..."
+    )
+    
     st.caption(
         "Logik: Wenn alle Livewerte aktuell sind, gilt: Systemkapital = Broker Cash + aktuelle Livewerte offener Positionen. "
         "Wenn Livewerte fehlen oder veraltet sind, wird zur Anzeige auf Einstandswerte zurückgefallen und BUY-Orders bleiben gesperrt. "
