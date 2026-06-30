@@ -382,6 +382,7 @@ def run_daily_update(incremental=True):
             sat_rank=sat_rank,
             open_positions=open_positions,
             df=underlying_df,
+            buy_orders_enabled=buy_orders_enabled,
         )
 
     core_orders = ensure_snapshot_system_column(
