@@ -517,17 +517,7 @@ def calculate_capital_plan(
         - satellite_target_capital
     )
 
-        "latest_cash_update_date": (
-            str(latest_cash_update_date)
-            if latest_cash_update_date is not None
-            else None
-        ),
-        "latest_sell_trade_date": (
-            str(latest_sell_trade_date)
-            if latest_sell_trade_date is not None
-            else None
-        ),
-        "cash_updated_after_latest_sell": cash_updated_after_latest_sell,
+
         
     metrics = {
         "broker_cash": broker_cash,
@@ -590,6 +580,17 @@ def calculate_capital_plan(
         ),
         "buy_orders_enabled": buy_orders_enabled,
         "buy_block_reason": buy_block_reason,
+        "latest_cash_update_date": (
+            str(latest_cash_update_date)
+            if latest_cash_update_date is not None
+            else None
+        ),
+        "latest_sell_trade_date": (
+            str(latest_sell_trade_date)
+            if latest_sell_trade_date is not None
+            else None
+        ),
+        "cash_updated_after_latest_sell": cash_updated_after_latest_sell,
     }
 
     return metrics, core_orders, sat_orders
