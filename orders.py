@@ -9,7 +9,8 @@ def generate_core_orders(
     open_positions,
     df,
     core_size,
-    core_sell_buffer
+    core_sell_buffer,
+    buy_orders_enabled=True,
 ):
 
     core_orders = []
