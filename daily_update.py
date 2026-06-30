@@ -365,6 +365,7 @@ def run_daily_update(incremental=True):
         df=underlying_df,
         core_size=core_size,
         core_sell_buffer=core_sell_buffer,
+        buy_orders_enabled=buy_orders_enabled,
     )
 
     if (
