@@ -876,8 +876,9 @@ with tab_dashboard:
         format_eur(capital_metrics.get("core_available_cash", 0.0)),
     )
     st.caption(
-        "Logik: HOLD bleibt liegen. Systemkapital = Broker Cash + Einstandswerte offener Positionen. "
-        "SAT Zielkapital entspricht 10 % des Systemkapitals: 5 % SATELLITE_A und 5 % SATELLITE_B. Offene Sleeves reservieren kein zusätzliches Cash."
+        "Logik: Wenn alle Livewerte aktuell sind, gilt: Systemkapital = Broker Cash + aktuelle Livewerte offener Positionen. "
+        "Wenn Livewerte fehlen oder veraltet sind, wird zur Anzeige auf Einstandswerte zurückgefallen und BUY-Orders bleiben gesperrt. "
+        "SAT Zielkapital entspricht 10 % des Systemkapitals: 5 % SATELLITE_A und 5 % SATELLITE_B. Broker Cash bleibt die harte Ordergrenze."
     )
 
     st.divider()
