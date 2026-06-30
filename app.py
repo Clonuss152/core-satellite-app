@@ -602,7 +602,7 @@ with tab_dashboard:
         st.metric("SAT Rebalance", next_sat_display)
 
     st.caption(f"Letztes Update: {last_update}")
-    required_live_value_date = today
+    required_live_value_date = latest_daily_update_date
 
     live_value_status = check_live_value_status(
         open_positions,
