@@ -882,9 +882,18 @@ with tab_dashboard:
     live_complete = capital_metrics.get("live_values_complete", False)
     buy_enabled = capital_metrics.get("buy_orders_enabled", False)
 
+    capital_basis_display = {
+        "MANUAL_LIVE_VALUES": "Livewerte",
+        "OPEN_COSTS": "Einstandswerte",
+        "OPEN_COSTS_FALLBACK_LIVE_VALUES_INCOMPLETE": "Einstandswerte (Fallback)",
+    }.get(
+        capital_basis,
+        capital_basis,
+    )
+
     status1.metric(
         "Kapitalbasis",
-        capital_basis,
+        capital_basis_display,
     )
 
     status2.metric(
@@ -917,9 +926,6 @@ with tab_dashboard:
         ),
     )
 
-    st.caption(
-        "Logik: Wenn alle Livewerte aktuell sind ..."
-    )
     
     st.caption(
         "Logik: Wenn alle Livewerte aktuell sind, gilt: Systemkapital = Broker Cash + aktuelle Livewerte offener Positionen. "
