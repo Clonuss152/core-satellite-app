@@ -14,14 +14,12 @@ def generate_core_orders(
 ):
 
     core_orders = []
-
     current_core = []
 
     if not open_positions.empty:
-
         current_core = open_positions.loc[
             open_positions["system_type"] == "CORE",
-            "underlying_ticker"
+            "underlying_ticker",
         ].tolist()
 
     core_target_tickers = core_target["ticker"].tolist()
@@ -34,7 +32,7 @@ def generate_core_orders(
 
         meta = get_underlying_info(
             ticker,
-            df
+            df,
         )
 
         if ticker in core_target_tickers:
@@ -49,21 +47,22 @@ def generate_core_orders(
             action = "SELL"
             reason = "Außerhalb Sell Buffer"
 
-        core_orders.append({
+        core_orders.append(
+            {
+                "system_type": "CORE",
+                "action": action,
+                "ticker": ticker,
+                "company_name": meta["company_name"],
+                "isin": meta["isin"],
+                "wkn": meta["wkn"],
+                "exchange": meta["exchange"],
+                "currency": meta["currency"],
+                "reason": reason,
+            }
+        )
 
-            "system_type": "CORE",
-            "action": action,
-            "ticker": ticker,
-
-            "company_name": meta["company_name"],
-            "isin": meta["isin"],
-            "wkn": meta["wkn"],
-            "exchange": meta["exchange"],
-            "currency": meta["currency"],
-
-            "reason": reason
-
-        })
+    if not buy_orders_enabled:
+        return pd.DataFrame(core_orders)
 
     sell_count = sum(
         1
@@ -75,7 +74,7 @@ def generate_core_orders(
 
     missing_slots = max(
         0,
-        core_size - open_core_count
+        core_size - open_core_count,
     )
 
     buy_slots = sell_count + missing_slots
@@ -87,7 +86,6 @@ def generate_core_orders(
         ticker = row["ticker"]
 
         if ticker not in current_core:
-
             buy_candidates.append(row)
 
     for row in buy_candidates[:buy_slots]:
@@ -96,27 +94,24 @@ def generate_core_orders(
 
         meta = get_underlying_info(
             ticker,
-            df
+            df,
         )
 
-        core_orders.append({
-
-            "system_type": "CORE",
-            "action": "BUY",
-            "ticker": ticker,
-
-            "company_name": meta["company_name"],
-            "isin": meta["isin"],
-            "wkn": meta["wkn"],
-            "exchange": meta["exchange"],
-            "currency": meta["currency"],
-
-            "reason": "Neue Zielposition",
-
-            "target_leverage": row["target_leverage"],
-            "rank": row["rank"]
-
-        })
+        core_orders.append(
+            {
+                "system_type": "CORE",
+                "action": "BUY",
+                "ticker": ticker,
+                "company_name": meta["company_name"],
+                "isin": meta["isin"],
+                "wkn": meta["wkn"],
+                "exchange": meta["exchange"],
+                "currency": meta["currency"],
+                "reason": "Neue Zielposition",
+                "target_leverage": row["target_leverage"],
+                "rank": row["rank"],
+            }
+        )
 
     return pd.DataFrame(core_orders)
 
@@ -161,14 +156,11 @@ def generate_satellite_orders(
     b_target = None
 
     for ticker in rank_list:
-
         if ticker != a_target:
             b_target = ticker
             break
 
-    #
     # SATELLITE A
-    #
 
     if sat_a_current is not None:
 
@@ -184,88 +176,98 @@ def generate_satellite_orders(
 
         meta = get_underlying_info(
             sat_a_current,
-            df
+            df,
         )
 
         if current_rank <= 7:
 
-            orders.append({
-                "system_type": "SATELLITE_A",
-                "action": "HOLD",
-                "ticker": sat_a_current,
-                "reason": "Innerhalb Sell Buffer",
-                "target_leverage": 10.0,
-                "rank": current_rank,
-                **meta
-            })
+            orders.append(
+                {
+                    "system_type": "SATELLITE_A",
+                    "action": "HOLD",
+                    "ticker": sat_a_current,
+                    "reason": "Innerhalb Sell Buffer",
+                    "target_leverage": 10.0,
+                    "rank": current_rank,
+                    **meta,
+                }
+            )
 
         else:
 
-            orders.append({
-                "system_type": "SATELLITE_A",
-                "action": "SELL",
-                "ticker": sat_a_current,
-                "reason": "Rank > 7",
-                "rank": current_rank,
-                **meta
-            })
-
-            meta_new = get_underlying_info(
-                a_target,
-                df
+            orders.append(
+                {
+                    "system_type": "SATELLITE_A",
+                    "action": "SELL",
+                    "ticker": sat_a_current,
+                    "reason": "Rank > 7",
+                    "rank": current_rank,
+                    **meta,
+                }
             )
 
-            orders.append({
-                "system_type": "SATELLITE_A",
-                "action": "BUY",
-                "ticker": a_target,
-                "reason": "Neue A Position",
-                "target_leverage": 10.0,
-                "rank": 1,
-                **meta_new
-            })
+            if buy_orders_enabled:
+
+                meta_new = get_underlying_info(
+                    a_target,
+                    df,
+                )
+
+                orders.append(
+                    {
+                        "system_type": "SATELLITE_A",
+                        "action": "BUY",
+                        "ticker": a_target,
+                        "reason": "Neue A Position",
+                        "target_leverage": 10.0,
+                        "rank": 1,
+                        **meta_new,
+                    }
+                )
 
     else:
 
-        meta = get_underlying_info(
-            a_target,
-            df
-        )
+        if buy_orders_enabled:
 
-        orders.append({
-            "system_type": "SATELLITE_A",
-            "action": "BUY",
-            "ticker": a_target,
-            "reason": "Keine offene A Position",
-            "target_leverage": 10.0,
-            "rank": 1,
-            **meta
-        })
+            meta = get_underlying_info(
+                a_target,
+                df,
+            )
 
-    #
+            orders.append(
+                {
+                    "system_type": "SATELLITE_A",
+                    "action": "BUY",
+                    "ticker": a_target,
+                    "reason": "Keine offene A Position",
+                    "target_leverage": 10.0,
+                    "rank": 1,
+                    **meta,
+                }
+            )
+
     # B FREIGEBEN FÜR A
-    #
 
     if sat_b_current == a_target:
 
         meta = get_underlying_info(
             sat_b_current,
-            df
+            df,
         )
 
-        orders.append({
-            "system_type": "SATELLITE_B",
-            "action": "SELL",
-            "ticker": sat_b_current,
-            "reason": "B freigemacht für A",
-            **meta
-        })
+        orders.append(
+            {
+                "system_type": "SATELLITE_B",
+                "action": "SELL",
+                "ticker": sat_b_current,
+                "reason": "B freigemacht für A",
+                **meta,
+            }
+        )
 
         sat_b_current = None
 
-    #
     # SATELLITE B
-    #
 
     if b_target is None:
         return pd.DataFrame(orders)
@@ -284,7 +286,7 @@ def generate_satellite_orders(
 
         meta = get_underlying_info(
             sat_b_current,
-            df
+            df,
         )
 
         if (
@@ -292,56 +294,69 @@ def generate_satellite_orders(
             and sat_b_current != a_target
         ):
 
-            orders.append({
-                "system_type": "SATELLITE_B",
-                "action": "HOLD",
-                "ticker": sat_b_current,
-                "reason": "Innerhalb Sell Buffer",
-                "rank": current_rank,
-                **meta
-            })
+            orders.append(
+                {
+                    "system_type": "SATELLITE_B",
+                    "action": "HOLD",
+                    "ticker": sat_b_current,
+                    "reason": "Innerhalb Sell Buffer",
+                    "target_leverage": 7.0,
+                    "rank": current_rank,
+                    **meta,
+                }
+            )
 
         else:
 
-            orders.append({
-                "system_type": "SATELLITE_B",
-                "action": "SELL",
-                "ticker": sat_b_current,
-                "reason": "Rotation",
-                "rank": current_rank,
-                **meta
-            })
-
-            meta_new = get_underlying_info(
-                b_target,
-                df
+            orders.append(
+                {
+                    "system_type": "SATELLITE_B",
+                    "action": "SELL",
+                    "ticker": sat_b_current,
+                    "reason": "Rotation",
+                    "rank": current_rank,
+                    **meta,
+                }
             )
 
-            orders.append({
-                "system_type": "SATELLITE_B",
-                "action": "BUY",
-                "ticker": b_target,
-                "reason": "Neue B Position",
-                "target_leverage": 7.0,
-                "rank": 2,
-                **meta_new
-            })
+            if buy_orders_enabled:
+
+                meta_new = get_underlying_info(
+                    b_target,
+                    df,
+                )
+
+                orders.append(
+                    {
+                        "system_type": "SATELLITE_B",
+                        "action": "BUY",
+                        "ticker": b_target,
+                        "reason": "Neue B Position",
+                        "target_leverage": 7.0,
+                        "rank": 2,
+                        **meta_new,
+                    }
+                )
 
     else:
 
-        meta = get_underlying_info(
-            b_target,
-            df
-        )
+        if buy_orders_enabled:
 
-        orders.append({
-            "system_type": "SATELLITE_B",
-            "action": "BUY",
-            "ticker": b_target,
-            "reason": "Keine offene B Position",
-            "target_leverage": 7.0,
-            "rank": 2,
-            **meta
-        })
+            meta = get_underlying_info(
+                b_target,
+                df,
+            )
+
+            orders.append(
+                {
+                    "system_type": "SATELLITE_B",
+                    "action": "BUY",
+                    "ticker": b_target,
+                    "reason": "Keine offene B Position",
+                    "target_leverage": 7.0,
+                    "rank": 2,
+                    **meta,
+                }
+            )
 
     return pd.DataFrame(orders)
