@@ -507,6 +507,7 @@ with tab_dashboard:
     # -------------------------------------------
 
     last_update = "Noch kein Update"
+    latest_daily_update_date = today
 
     if not status_df.empty:
         row = status_df[
@@ -520,7 +521,8 @@ with tab_dashboard:
             ).tz_convert("Europe/Berlin")
 
             last_update = timestamp_dt.strftime("%d.%m.%Y %H:%M")
-
+            latest_daily_update_date = timestamp_dt.date()
+        
     next_core_display = "-"
     next_sat_display = "-"
 
