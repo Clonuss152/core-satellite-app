@@ -876,8 +876,6 @@ with tab_dashboard:
         format_eur(capital_metrics.get("core_available_cash", 0.0)),
     )
 
-    status1, status2, status3, status4, status5 = st.columns(5)
-
     capital_basis = capital_metrics.get("capital_basis", "-")
     live_complete = capital_metrics.get("live_values_complete", False)
     buy_enabled = capital_metrics.get("buy_orders_enabled", False)
@@ -891,31 +889,47 @@ with tab_dashboard:
         capital_basis,
     )
 
-    status1.metric(
-        "Kapitalbasis",
-        capital_basis_display,
+    status_df_display = pd.DataFrame(
+        [
+            {
+                "Status": "Kapitalbasis",
+                "Wert": capital_basis_display,
+            },
+            {
+                "Status": "Livewerte vollständig",
+                "Wert": "✅ Ja" if live_complete else "❌ Nein",
+            },
+            {
+                "Status": "BUY Orders",
+                "Wert": "✅ Aktiv" if buy_enabled else "🔒 Gesperrt",
+            },
+            {
+                "Status": "Open Live Value",
+                "Wert": format_eur(
+                    capital_metrics.get(
+                        "total_open_live_value",
+                        0.0,
+                    )
+                ),
+            },
+            {
+                "Status": "Open Cost",
+                "Wert": format_eur(
+                    capital_metrics.get(
+                        "total_open_cost",
+                        0.0,
+                    )
+                ),
+            },
+        ]
     )
 
-    status2.metric(
-        "Livewerte vollständig",
-        "JA" if live_complete else "NEIN",
+    st.dataframe(
+        status_df_display,
+        use_container_width=True,
+        hide_index=True,
     )
-
-    status3.metric(
-        "BUY Orders",
-        "AKTIV" if buy_enabled else "GESPERRT",
-    )
-
-    status4.metric(
-        "Open Live Value",
-        format_eur(
-            capital_metrics.get(
-                "total_open_live_value",
-                0.0,
-            )
-        ),
-    )
-
+    
     status5.metric(
         "Open Cost",
         format_eur(
