@@ -31,6 +31,30 @@ def get_latest_broker_cash(cash_state_df):
 
     return float(latest_cash)
 
+def get_latest_cash_update_date(cash_state_df):
+
+    if cash_state_df.empty:
+        return None
+
+    cash_state_df = cash_state_df.copy()
+
+    if "snapshot_date" not in cash_state_df.columns:
+        return None
+
+    cash_state_df["snapshot_date"] = pd.to_datetime(
+        cash_state_df["snapshot_date"]
+    )
+
+    cash_state_df = cash_state_df.sort_values(
+        "snapshot_date"
+    )
+
+    latest_date = cash_state_df.iloc[-1]["snapshot_date"]
+
+    if pd.isna(latest_date):
+        return None
+
+    return latest_date.date()
 
 def calculate_open_costs(trade_df):
 
