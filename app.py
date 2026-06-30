@@ -905,6 +905,7 @@ with tab_dashboard:
     capital_basis = capital_metrics.get("capital_basis", "-")
     live_complete = capital_metrics.get("live_values_complete", False)
     buy_enabled = capital_metrics.get("buy_orders_enabled", False)
+    buy_block_reason = capital_metrics.get("buy_block_reason")
 
     capital_basis_display = {
         "MANUAL_LIVE_VALUES": "Livewerte",
