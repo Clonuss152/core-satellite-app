@@ -906,6 +906,14 @@ with tab_dashboard:
     live_complete = capital_metrics.get("live_values_complete", False)
     buy_enabled = capital_metrics.get("buy_orders_enabled", False)
     buy_block_reason = capital_metrics.get("buy_block_reason")
+    buy_block_reason_text = {
+        "LIVE_VALUES_STALE": "Livewerte fehlen oder sind veraltet",
+        "SELL_ORDERS_PENDING": "SELL-Orders zuerst ausführen",
+        "INSUFFICIENT_BROKER_CASH": "Broker-Cash nicht ausreichend",
+    }.get(
+        buy_block_reason,
+        buy_block_reason,
+    )
 
     capital_basis_display = {
         "MANUAL_LIVE_VALUES": "Livewerte",
