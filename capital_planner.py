@@ -56,6 +56,39 @@ def get_latest_cash_update_date(cash_state_df):
 
     return latest_date.date()
 
+def get_latest_sell_trade_date(trade_df):
+
+    if trade_df.empty:
+        return None
+
+    if "action" not in trade_df.columns:
+        return None
+
+    if "trade_date" not in trade_df.columns:
+        return None
+
+    sell_trades = trade_df[
+        trade_df["action"] == "SELL"
+    ].copy()
+
+    if sell_trades.empty:
+        return None
+
+    sell_trades["trade_date"] = pd.to_datetime(
+        sell_trades["trade_date"]
+    )
+
+    sell_trades = sell_trades.sort_values(
+        "trade_date"
+    )
+
+    latest_sell_date = sell_trades.iloc[-1]["trade_date"]
+
+    if pd.isna(latest_sell_date):
+        return None
+
+    return latest_sell_date.date()
+
 def calculate_open_costs(trade_df):
 
     if trade_df.empty:
