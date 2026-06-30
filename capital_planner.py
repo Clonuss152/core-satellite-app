@@ -436,6 +436,14 @@ def calculate_capital_plan(
         - satellite_target_capital
     )
 
+    buy_block_reason = None
+
+    if not live_value_result["live_values_complete"]:
+        buy_block_reason = "LIVE_VALUES_STALE"
+
+    elif broker_cash <= 0:
+        buy_block_reason = "INSUFFICIENT_BROKER_CASH"
+        
     metrics = {
         "broker_cash": broker_cash,
         "system_capital": system_capital,
@@ -481,7 +489,6 @@ def calculate_capital_plan(
             or satellite_b_is_open
         ),
 
-        "buy_orders_enabled": buy_orders_enabled,
         "live_values_complete": live_value_result[
             "live_values_complete"
         ],
@@ -496,6 +503,8 @@ def calculate_capital_plan(
             if required_live_value_date is not None
             else None
         ),
+        "buy_orders_enabled": buy_orders_enabled,
+        "buy_block_reason": buy_block_reason,
     }
 
     return metrics, core_orders, sat_orders
