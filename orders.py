@@ -124,7 +124,8 @@ def generate_core_orders(
 def generate_satellite_orders(
     sat_rank,
     open_positions,
-    df
+    df,
+    buy_orders_enabled=True,
 ):
 
     orders = []
