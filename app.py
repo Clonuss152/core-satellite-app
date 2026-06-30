@@ -1132,6 +1132,74 @@ with tab_dashboard:
     st.divider()
 
     # -------------------------------------------
+    # Rebalance Arbeitsanweisung
+    # -------------------------------------------
+
+    st.subheader("Nächster Schritt")
+
+    has_sell_orders = False
+    has_buy_orders = False
+
+    if not planned_core_orders.empty:
+        has_sell_orders = (
+            has_sell_orders
+            or (planned_core_orders["action"] == "SELL").any()
+        )
+
+        has_buy_orders = (
+            has_buy_orders
+            or (planned_core_orders["action"] == "BUY").any()
+        )
+
+    if not planned_sat_orders.empty:
+        has_sell_orders = (
+            has_sell_orders
+            or (planned_sat_orders["action"] == "SELL").any()
+        )
+
+        has_buy_orders = (
+            has_buy_orders
+            or (planned_sat_orders["action"] == "BUY").any()
+        )
+
+    if buy_block_reason == "LIVE_VALUES_STALE":
+        st.warning(
+            "Livewerte aktualisieren. Für mindestens eine offene Position fehlt ein aktueller Livewert oder das Bewertungsdatum passt nicht zum letzten Daily Update."
+        )
+
+    elif buy_block_reason == "SELL_ORDERS_PENDING":
+        st.warning(
+            "SELL zuerst ausführen. Danach SELL-Trade erfassen, Broker-Cash aktualisieren, Livewerte der verbleibenden Positionen aktualisieren und Daily Update erneut starten."
+        )
+
+    elif buy_block_reason == "CASH_UPDATE_REQUIRED":
+        st.warning(
+            "Broker-Cash nach SELL aktualisieren. Erst danach Daily Update erneut starten und BUY-Orders berechnen lassen."
+        )
+
+    elif buy_block_reason == "INSUFFICIENT_BROKER_CASH":
+        st.warning(
+            "Broker-Cash reicht aktuell nicht für neue BUY-Orders aus."
+        )
+
+    elif has_buy_orders:
+        st.success(
+            "BUY-Orders sind bereit. Bitte vor Ausführung Broker-Cash und Livewerte prüfen."
+        )
+
+    elif has_sell_orders:
+        st.warning(
+            "SELL-Orders vorhanden. Erst SELLs ausführen, danach Cash und Livewerte aktualisieren und Daily Update erneut starten."
+        )
+
+    else:
+        st.success(
+            "Keine unmittelbare Aktion erforderlich. Es liegen keine aktiven BUY- oder SELL-Orders vor."
+        )
+
+    st.divider()
+
+    # -------------------------------------------
     # Aktive Orders
     # -------------------------------------------
 
