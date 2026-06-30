@@ -117,6 +117,13 @@ def run_daily_update(incremental=True):
     trade_result = supabase.table("trades").select("*").execute()
     trade_df = pd.DataFrame(trade_result.data)
 
+    live_values_result = (
+        supabase.table("position_live_values")
+        .select("*")
+        .execute()
+    )
+    live_values_df = pd.DataFrame(live_values_result.data)
+
     tickers = underlying_df["ticker"].dropna().unique()
 
     total_rows = 0
