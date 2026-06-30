@@ -28,6 +28,10 @@ from regime import get_regime
 from orders import generate_core_orders, generate_satellite_orders
 from utils import get_underlying_info
 
+from live_value_validator import (
+    check_live_value_status,
+)
+
 from snapshot import (
     clear_today_snapshots,
     save_regime_snapshot,
