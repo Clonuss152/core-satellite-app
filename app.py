@@ -600,6 +600,36 @@ with tab_dashboard:
         st.metric("SAT Rebalance", next_sat_display)
 
     st.caption(f"Letztes Update: {last_update}")
+    required_live_value_date = today
+
+    live_value_status = check_live_value_status(
+        open_positions,
+        position_live_values_df,
+        required_live_value_date,
+    )
+
+    st.markdown("### Livewert-Status")
+
+    if live_value_status["complete"]:
+        st.success(
+            f"Livewerte vollständig und aktuell für {required_live_value_date}."
+        )
+    else:
+        st.error(
+            "Livewerte nicht aktuell. BUY-Orders werden später gesperrt."
+        )
+
+        if live_value_status["missing"]:
+            st.warning(
+                "Fehlende Livewerte: "
+                + ", ".join(live_value_status["missing"])
+            )
+
+        if live_value_status["stale"]:
+            st.warning(
+                "Veraltete Livewerte: "
+                + ", ".join(live_value_status["stale"])
+            )
     due1, due2 = st.columns(2)
 
     with due1:
