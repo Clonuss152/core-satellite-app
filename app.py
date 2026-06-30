@@ -930,15 +930,7 @@ with tab_dashboard:
         hide_index=True,
     )
     
-    status5.metric(
-        "Open Cost",
-        format_eur(
-            capital_metrics.get(
-                "total_open_cost",
-                0.0,
-            )
-        ),
-    )
+
 
     
     st.caption(
