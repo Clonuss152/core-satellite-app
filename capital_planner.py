@@ -211,6 +211,7 @@ def calculate_capital_plan(
     sat_orders,
     live_values_df=None,
     required_live_value_date=None,
+    sell_orders_present=False,
 ):
 
     broker_cash = get_latest_broker_cash(
