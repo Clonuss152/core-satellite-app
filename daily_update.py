@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 import pandas as pd
 from supabase import create_client
