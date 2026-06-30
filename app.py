@@ -931,6 +931,10 @@ with tab_dashboard:
                 "Wert": "✅ Aktiv" if buy_enabled else "🔒 Gesperrt",
             },
             {
+                "Status": "BUY Sperrgrund",
+                "Wert": buy_block_reason if buy_block_reason else "-",
+            },
+            {
                 "Status": "Open Live Value",
                 "Wert": format_eur(
                     capital_metrics.get(
