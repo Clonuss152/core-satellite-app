@@ -801,6 +801,20 @@ with tab_dashboard:
                     )
                 )
             ]
+    sell_orders_present = False
+
+    if not active_core_orders.empty:
+        sell_orders_present = (
+            sell_orders_present
+            or (active_core_orders["action"] == "SELL").any()
+        )
+
+    if not active_sat_orders.empty:
+        sell_orders_present = (
+            sell_orders_present
+            or (active_sat_orders["action"] == "SELL").any()
+        )
+
     capital_metrics, planned_core_orders, planned_sat_orders = calculate_capital_plan(
         trade_df=trade_df,
         cash_state_df=cash_state_df,
@@ -808,8 +822,8 @@ with tab_dashboard:
         sat_orders=active_sat_orders,
         live_values_df=position_live_values_df,
         required_live_value_date=latest_daily_update_date,
+        sell_orders_present=sell_orders_present,
     )
-
     if not capital_metrics.get("buy_orders_enabled", True):
 
         if not planned_core_orders.empty:
