@@ -561,9 +561,24 @@ with tab_dashboard:
         sat_rebalance_due = today >= next_sat_date
     regime_snapshot = load_latest_regime_snapshot(supabase)
     latest_regime = None
+    core_portfolio_size = None
 
     if not regime_snapshot.empty:
         latest_regime = regime_snapshot.iloc[0]
+
+        current_regime = latest_regime.get(
+            "regime",
+            None,
+        )
+
+        core_portfolio_size = {
+            "STRONG": 3,
+            "NORMAL": 5,
+            "WEAK": 7,
+        }.get(
+            current_regime,
+            None,
+        )
 
     # -------------------------------------------
     # Kompakter Header
