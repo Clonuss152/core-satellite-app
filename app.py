@@ -1521,21 +1521,95 @@ with tab_portfolio:
                     * live_product_price
                 )
 
-                supabase.table(
-                    "position_live_values"
-                ).insert(
-                    {
-                        "valuation_date": str(valuation_date),
-                        "system_type": edited_row["System"],
-                        "underlying_ticker": edited_row["Ticker"],
-                        "turbo_wkn": edited_row["WKN"],
-                        "turbo_isin": edited_row["ISIN"],
-                        "open_qty": open_qty,
-                        "live_product_price": live_product_price,
-                        "live_position_value": live_position_value,
-                        "source": "MANUAL",
-                    }
-                ).execute()
+                system_type = str(
+                    edited_row["System"]
+                )
+
+                underlying_ticker = str(
+                    edited_row["Ticker"]
+                )
+
+                turbo_wkn = edited_row.get(
+                    "WKN",
+                    "",
+                )
+
+                turbo_isin = edited_row.get(
+                    "ISIN",
+                    "",
+                )
+
+                if pd.isna(turbo_wkn):
+                    turbo_wkn = ""
+                else:
+                    turbo_wkn = str(turbo_wkn)
+
+                if pd.isna(turbo_isin):
+                    turbo_isin = ""
+                else:
+                    turbo_isin = str(turbo_isin)
+
+                live_value_payload = {
+                    "valuation_date": str(valuation_date),
+                    "system_type": system_type,
+                    "underlying_ticker": underlying_ticker,
+                    "turbo_wkn": turbo_wkn,
+                    "turbo_isin": turbo_isin,
+                    "open_qty": open_qty,
+                    "live_product_price": live_product_price,
+                    "live_position_value": live_position_value,
+                    "source": "MANUAL",
+                }
+
+                existing_live_value = (
+                    supabase.table(
+                        "position_live_values"
+                    )
+                    .select("id")
+                    .eq(
+                        "valuation_date",
+                        str(valuation_date),
+                    )
+                    .eq(
+                        "system_type",
+                        system_type,
+                    )
+                    .eq(
+                        "underlying_ticker",
+                        underlying_ticker,
+                    )
+                    .eq(
+                        "turbo_wkn",
+                        turbo_wkn,
+                    )
+                    .eq(
+                        "turbo_isin",
+                        turbo_isin,
+                    )
+                    .limit(1)
+                    .execute()
+                )
+
+                if existing_live_value.data:
+                    existing_id = existing_live_value.data[0]["id"]
+
+                    (
+                        supabase.table(
+                            "position_live_values"
+                        )
+                        .update(live_value_payload)
+                        .eq("id", existing_id)
+                        .execute()
+                    )
+
+                else:
+                    (
+                        supabase.table(
+                            "position_live_values"
+                        )
+                        .insert(live_value_payload)
+                        .execute()
+                    )
 
                 saved_count += 1
 
