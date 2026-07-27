@@ -448,45 +448,42 @@ def calculate_capital_plan(
 
     if not core_orders.empty:
 
-        core_orders["suggested_amount"] = 0.0
+    core_target_capital = (
+        system_capital
+        * CORE_TARGET_WEIGHT
+    )
 
-        core_target_capital = (
-            system_capital
-            * CORE_TARGET_WEIGHT
+    core_slot_target = 0.0
+
+    if (
+        core_portfolio_size is not None
+        and core_portfolio_size > 0
+    ):
+        core_slot_target = (
+            core_target_capital
+            / core_portfolio_size
         )
+
+    if not core_orders.empty:
+
+        core_orders["suggested_amount"] = 0.0
 
         core_buy_orders = core_orders[
             core_orders["action"] == "BUY"
         ].copy()
-
-        core_portfolio_size = (
-            len(core_buy_orders)
-            + len(
-                core_orders[
-                    core_orders["action"] == "HOLD"
-                ]
-            )
-        )
-
-        if core_portfolio_size > 0:
-            core_slot_target = (
-                core_target_capital
-                / core_portfolio_size
-            )
-        else:
-            core_slot_target = 0.0
 
         remaining_core_cash = core_available_cash
 
         if (
             not core_buy_orders.empty
             and buy_orders_enabled
+            and core_slot_target > 0
         ):
 
-            core_buy_orders = (
-                core_buy_orders
-                .sort_values("rank")
-            )
+            if "rank" in core_buy_orders.columns:
+                core_buy_orders = core_buy_orders.sort_values(
+                    "rank"
+                )
 
             for idx, _ in core_buy_orders.iterrows():
 
@@ -505,6 +502,9 @@ def calculate_capital_plan(
                     remaining_core_cash
                     - planned_amount,
                 )
+
+                if remaining_core_cash <= 0:
+                    break
 
     if not sat_orders.empty:
 
