@@ -269,8 +269,8 @@ def calculate_capital_plan(
     live_values_df=None,
     required_live_value_date=None,
     sell_orders_present=False,
+    core_portfolio_size=None,
 ):
-
     broker_cash = get_latest_broker_cash(
         cash_state_df
     )
