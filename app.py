@@ -838,6 +838,7 @@ with tab_dashboard:
         live_values_df=position_live_values_df,
         required_live_value_date=latest_daily_update_date,
         sell_orders_present=sell_orders_present,
+        core_portfolio_size=core_portfolio_size,
     )
     if not capital_metrics.get("buy_orders_enabled", True):
 
