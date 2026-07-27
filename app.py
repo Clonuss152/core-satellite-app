@@ -451,7 +451,6 @@ if not trade_df.empty:
         ].apply(security_label)
 
 
-
 def prepare_trade_from_order(row, system_type):
     action = row.get("action")
     ticker = row.get("ticker")
@@ -466,18 +465,48 @@ def prepare_trade_from_order(row, system_type):
 
     if action == "SELL" and not open_positions.empty:
         match = open_positions[
-            (open_positions["system_type"] == system_type)
-            & (open_positions["underlying_ticker"] == ticker)
+            (
+                open_positions["system_type"]
+                == system_type
+            )
+            &
+            (
+                open_positions["underlying_ticker"]
+                == ticker
+            )
         ]
 
         if not match.empty:
             pos = match.iloc[0]
-            prefill["turbo_wkn"] = pos.get("turbo_wkn", "")
-            prefill["turbo_isin"] = pos.get("turbo_isin", "")
-            prefill["issuer"] = pos.get("issuer", "")
-            prefill["quantity"] = float(pos.get("OPEN_QTY", 0.0))
+
+            prefill["turbo_wkn"] = pos.get(
+                "turbo_wkn",
+                "",
+            )
+            prefill["turbo_isin"] = pos.get(
+                "turbo_isin",
+                "",
+            )
+            prefill["issuer"] = pos.get(
+                "issuer",
+                "",
+            )
+            prefill["quantity"] = float(
+                pos.get(
+                    "OPEN_QTY",
+                    0.0,
+                )
+            )
 
     st.session_state["prefill_trade"] = prefill
+
+    st.session_state[
+        "new_trade_underlying_ticker"
+    ] = ticker
+
+    st.session_state[
+        "trade_action_select"
+    ] = action
 
 
 # ===================================================
