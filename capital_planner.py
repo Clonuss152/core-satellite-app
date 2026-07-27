@@ -446,8 +446,6 @@ def calculate_capital_plan(
     core_orders = core_orders.copy()
     sat_orders = sat_orders.copy()
 
-    if not core_orders.empty:
-
     core_target_capital = (
         system_capital
         * CORE_TARGET_WEIGHT
