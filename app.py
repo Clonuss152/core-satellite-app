@@ -1535,7 +1535,7 @@ with tab_portfolio:
 
         valuation_date = st.date_input(
             "Bewertungsdatum für alle Livewerte",
-            value=latest_daily_update_date,
+            value=today,
             format="DD.MM.YYYY",
             key="bulk_live_value_date",
         )
