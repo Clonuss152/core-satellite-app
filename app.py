@@ -119,9 +119,9 @@ def safe_value(value):
 
 
 def color_order(val):
-    if val == "HOLD":
-        return "background-color: #d4edda; color: black"
     if val == "BUY":
+        return "background-color: #d4edda; color: black"
+    if val == "HOLD":
         return "background-color: #fff3cd; color: black"
     if val == "SELL":
         return "background-color: #f8d7da; color: black"
